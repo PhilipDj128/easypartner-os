@@ -15,7 +15,7 @@ interface Quote {
   services: QuoteService[];
   total_amount: number;
   status: string;
-  customers?: { id: string; name: string; company: string | null } | null;
+  customers?: { id: string; name: string; company: string | null; email: string | null } | null;
 }
 
 interface Customer {
@@ -59,6 +59,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [services, setServices] = useState<QuoteService[]>([{ name: '', price: 0 }]);
 
   const fetchQuotes = async () => {
@@ -134,6 +135,37 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
     }
   };
 
+  const sendQuoteEmail = async (q: Quote) => {
+    const email = q.customers?.email;
+    if (!email) {
+      alert('Kunden har ingen e-postadress. Lägg till e-post på kundprofilen.');
+      return;
+    }
+    setSendingEmailId(q.id);
+    try {
+      const res = await fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_quote',
+          to: email,
+          customerName: q.customers?.name,
+          services: q.services ?? [],
+          totalAmount: q.total_amount ?? 0,
+        }),
+      });
+      if (res.ok) {
+        await fetchQuotes();
+        router.refresh();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Kunde inte skicka');
+      }
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
   const markAsSent = async (id: string) => {
     try {
       const res = await fetch(`/api/quotes/${id}`, {
@@ -142,6 +174,34 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
         body: JSON.stringify({ status: 'sent' }),
       });
       if (res.ok) {
+        await fetchQuotes();
+        router.refresh();
+      }
+    } catch {
+      alert('Kunde inte uppdatera');
+    }
+  };
+
+  const markAsSigned = async (q: Quote) => {
+    try {
+      const res = await fetch(`/api/quotes/${q.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'signed' }),
+      });
+      if (res.ok) {
+        const email = q.customers?.email;
+        if (email) {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'quote_signed',
+              to: email,
+              customerName: q.customers?.name,
+            }),
+          });
+        }
         await fetchQuotes();
         router.refresh();
       }
@@ -221,15 +281,36 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-5 text-right">
-                      {q.status === 'draft' && (
-                        <button
-                          type="button"
-                          onClick={() => markAsSent(q.id)}
-                          className="text-sm text-brand-600 hover:text-brand-900"
-                        >
-                          Markera som skickad
-                        </button>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        {q.status === 'draft' && (
+                          <button
+                            type="button"
+                            onClick={() => markAsSent(q.id)}
+                            className="text-sm text-brand-600 hover:text-brand-900"
+                          >
+                            Markera som skickad
+                          </button>
+                        )}
+                        {(q.status === 'draft' || q.status === 'sent') && (
+                          <button
+                            type="button"
+                            onClick={() => sendQuoteEmail(q)}
+                            disabled={sendingEmailId === q.id}
+                            className="text-sm text-brand-600 hover:text-brand-900 disabled:opacity-50"
+                          >
+                            {sendingEmailId === q.id ? 'Skickar…' : 'Skicka via mail'}
+                          </button>
+                        )}
+                        {(q.status === 'sent' || q.status === 'opened') && (
+                          <button
+                            type="button"
+                            onClick={() => markAsSigned(q)}
+                            className="text-sm text-green-600 hover:text-green-800"
+                          >
+                            Markera som signerad
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

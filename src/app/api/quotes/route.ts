@@ -11,7 +11,7 @@ export async function GET() {
       .from('quotes')
       .select(`
         *,
-        customers (id, name, company)
+        customers (id, name, company, email)
       `)
       .order('created_at', { ascending: false });
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       })
       .select(`
         *,
-        customers (id, name, company)
+        customers (id, name, company, email)
       `)
       .single();
 

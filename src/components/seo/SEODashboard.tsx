@@ -47,6 +47,13 @@ export function SEODashboard({
   const [addOpen, setAddOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [suggestionsModal, setSuggestionsModal] = useState<{
+    meta_title: string;
+    meta_description: string;
+    content_suggestions: string[];
+    technical_actions: string[];
+  } | null>(null);
 
   const customerDomains = domains.filter((d) => d.customer_id === selectedCustomerId);
 
@@ -115,6 +122,30 @@ export function SEODashboard({
     }
   };
 
+  const handleAnalyzeAI = async () => {
+    if (!selectedCustomerId) {
+      alert('Välj en kund först');
+      return;
+    }
+    setOptimizing(true);
+    setSuggestionsModal(null);
+    try {
+      const res = await fetch('/api/seo/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: selectedCustomerId }),
+      });
+      const data = await res.json();
+      if (res.ok && data.suggestions) {
+        setSuggestionsModal(data.suggestions);
+      } else {
+        alert(data.error || 'Kunde inte analysera');
+      }
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   const handleUpdateRankings = async () => {
     if (!selectedCustomerId) {
       alert('Välj en kund först');
@@ -176,6 +207,14 @@ export function SEODashboard({
             className="rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
           >
             {updating ? 'Uppdaterar…' : 'Uppdatera ranking'}
+          </button>
+          <button
+            type="button"
+            onClick={handleAnalyzeAI}
+            disabled={optimizing || !selectedCustomerId || rankings.length === 0}
+            className="rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+          >
+            {optimizing ? 'Analyserar…' : 'Analysera med AI'}
           </button>
         </div>
       </div>
@@ -338,6 +377,51 @@ export function SEODashboard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {suggestionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="font-serif text-xl text-brand-900">Claudes SEO-förslag</h3>
+            <div className="mt-6 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-brand-600">Ny meta-titel</p>
+                <p className="mt-1 rounded-lg bg-sand-50 p-3 text-brand-900">{suggestionsModal.meta_title || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-brand-600">Ny meta-beskrivning</p>
+                <p className="mt-1 rounded-lg bg-sand-50 p-3 text-brand-900">{suggestionsModal.meta_description || '—'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-brand-600">Innehållsförslag</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg bg-sand-50 p-3 text-brand-900">
+                  {suggestionsModal.content_suggestions?.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                  {(!suggestionsModal.content_suggestions || suggestionsModal.content_suggestions.length === 0) && <li>—</li>}
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-brand-600">Tekniska åtgärder</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg bg-sand-50 p-3 text-brand-900">
+                  {suggestionsModal.technical_actions?.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                  {(!suggestionsModal.technical_actions || suggestionsModal.technical_actions.length === 0) && <li>—</li>}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSuggestionsModal(null)}
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600"
+              >
+                Stäng
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -27,7 +27,7 @@ export async function PATCH(
       .eq('id', id)
       .select(`
         *,
-        customers (id, name, company)
+        customers (id, name, company, email)
       `)
       .single();
 

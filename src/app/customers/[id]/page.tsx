@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
+import { SendLoginLinkButton } from '@/components/customers/SendLoginLinkButton';
 import type { Customer, Domain, Revenue, Reminder } from '@/types/database';
 
 function formatCurrency(value: number | null) {
@@ -85,13 +86,14 @@ export default async function CustomerProfilePage({
         >
           ← Tillbaka till kunder
         </Link>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/quotes?customer=${id}`}
             className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600"
           >
             Generera offert
           </Link>
+          <SendLoginLinkButton email={c.email} customerName={c.name} />
           <button
             type="button"
             className="rounded-lg border border-brand-500 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50"

@@ -4,6 +4,7 @@ export interface Customer {
   name: string;
   company: string | null;
   email: string | null;
+  logo_url?: string | null;
   phone: string | null;
   birthday: string | null;
   contract_value: number | null;

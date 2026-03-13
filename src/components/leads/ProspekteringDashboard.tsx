@@ -13,6 +13,16 @@ interface CompanyInfo {
   subscriptions?: number | null;
 }
 
+interface AgencyReputation {
+  agency_name: string;
+  trustpilot_rating: number | null;
+  trustpilot_url: string | null;
+  negative_review_count: number;
+  on_warning_list: boolean;
+  warned: boolean;
+  hot_lead: boolean;
+}
+
 interface Lead {
   id: string;
   company_name: string;
@@ -36,6 +46,9 @@ interface Lead {
   city?: string;
   company_info?: CompanyInfo | null;
   pts_operator?: string | null;
+  pts_is_switchboard?: boolean;
+  direct_phones?: string[];
+  agency_reputation?: AgencyReputation | null;
   built_by?: string | null;
   built_by_agency?: string | null;
   sales_pitch?: string | null;
@@ -53,6 +66,9 @@ const ISSUE_LABELS: Record<string, string> = {
   poor_seo_meta: 'Dålig SEO-meta',
   no_meta_desc: 'Saknar meta',
   built_by_other: 'Byggd av annan byrå',
+  pts_switchboard: 'Växel',
+  agency_warned: 'Varnad byrå ⚠️',
+  agency_hot_lead: 'Missnöjd med byrå',
 };
 
 function getScoreColor(score: number): string {
@@ -200,6 +216,9 @@ export function ProspekteringDashboard() {
     if (lead.issues?.includes('no_title_or_short')) badges.push('no_title_or_short');
     if (lead.issues?.includes('no_meta_desc')) badges.push('no_meta_desc');
     if (lead.built_by || lead.issues?.includes('built_by_other')) badges.push('built_by_other');
+    if (lead.pts_is_switchboard || lead.issues?.includes('pts_switchboard')) badges.push('pts_switchboard');
+    if (lead.agency_reputation?.warned || lead.issues?.includes('agency_warned')) badges.push('agency_warned');
+    if (lead.agency_reputation?.hot_lead || lead.issues?.includes('agency_hot_lead')) badges.push('agency_hot_lead');
     return badges;
   };
 
@@ -276,8 +295,23 @@ export function ProspekteringDashboard() {
               return (
               <div
                 key={lead.id}
-                className="rounded-xl border border-sand-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+                className={`rounded-xl border shadow-sm transition-shadow hover:shadow-md overflow-hidden ${
+                  lead.agency_reputation?.on_warning_list
+                    ? 'border-red-300 bg-red-50/30'
+                    : 'border-sand-200 bg-white'
+                }`}
               >
+                {lead.agency_reputation?.on_warning_list && (
+                  <div className="bg-red-100 border-b border-red-200 px-4 py-2 text-sm font-medium text-red-800">
+                    ⚠️ Varnad byrå — kundens nuvarande byrå finns på Svensk Handels varningslista
+                  </div>
+                )}
+                {lead.agency_reputation?.hot_lead && (
+                  <div className="bg-amber-100 border-b border-amber-200 px-4 py-2.5 text-sm font-semibold text-amber-900">
+                    🔥 Missnöjd med sin byrå — ring idag
+                  </div>
+                )}
+                <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -311,6 +345,11 @@ export function ProspekteringDashboard() {
                         </a>
                         {lead.pts_operator && (
                           <span className="text-xs text-sand-600">Operatör: {lead.pts_operator}</span>
+                        )}
+                        {lead.pts_is_switchboard && lead.direct_phones && lead.direct_phones.length > 0 && (
+                          <span className="text-xs text-sand-600">
+                            Direktnummer: {lead.direct_phones.slice(0, 2).map(formatPhone).join(', ')}
+                          </span>
                         )}
                       </div>
                     ))}
@@ -358,10 +397,30 @@ export function ProspekteringDashboard() {
                           .join(', ')}
                       </p>
                     ))}
-                    {lead.built_by_agency && (
-                      <p className="mt-1 text-xs text-sand-600">
-                        <span className="font-medium">Hemsida byggd av:</span> {lead.built_by_agency}
-                      </p>
+                    {(lead.agency_reputation || lead.built_by_agency) && (
+                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
+                        <p className="font-medium text-sand-800">Byråanalys</p>
+                        <p className="mt-1 text-sand-600">
+                          <span className="font-medium">Byrå:</span> {lead.built_by_agency || '—'}
+                        </p>
+                        {lead.agency_reputation?.trustpilot_rating != null && (
+                          <p className="mt-0.5 text-sand-600">
+                            Trustpilot: {lead.agency_reputation.trustpilot_rating.toFixed(1)}/5
+                            {' ★'.repeat(Math.round(lead.agency_reputation.trustpilot_rating))}
+                            {' ☆'.repeat(5 - Math.round(lead.agency_reputation.trustpilot_rating))}
+                          </p>
+                        )}
+                        {lead.agency_reputation?.trustpilot_url && (
+                          <a
+                            href={lead.agency_reputation.trustpilot_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-block text-brand-600 hover:underline"
+                          >
+                            Se Trustpilot →
+                          </a>
+                        )}
+                      </div>
                     )}
                     {lead.extra_domains && lead.extra_domains.length > 0 && (
                       <p className="mt-1 text-xs text-sand-600">
@@ -422,6 +481,7 @@ export function ProspekteringDashboard() {
                   >
                     {addingId === lead.id ? 'Lägger till…' : 'Lägg till i CRM'}
                   </button>
+                </div>
                 </div>
               </div>
             );

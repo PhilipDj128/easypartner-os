@@ -32,11 +32,40 @@ export function normalizePhone(phone: string): string {
   return digits.startsWith('0') ? digits : '0' + digits;
 }
 
+const PTS_OPERATORS = [
+  'Telia',
+  'Tele2',
+  'Tre',
+  'Comviq',
+  'Telenor',
+  'Hallon',
+  'Vimla',
+  'Lycamobile',
+  'Fello',
+  'Halebop',
+  'Boxer',
+  'Mundio',
+  'TDC',
+  'Bahnhof',
+  'Bredbandsbolaget',
+  'IP-Only',
+  'Televox',
+  'Telavox',
+  'Viatel',
+  'GlobalConnect',
+];
+const SWITCHBOARD_OPERATORS = ['Televox', 'Telavox', 'GlobalConnect'];
+
+export interface PtsResult {
+  operator: string | null;
+  isSwitchboard: boolean;
+}
+
 /** Slå upp operatör på PTS nummer.pts.se */
-export async function lookupPtsOperator(phone: string): Promise<string | null> {
+export async function lookupPtsOperator(phone: string): Promise<PtsResult> {
   const digits = phone.replace(/\D/g, '');
   const normalized = digits.startsWith('46') ? '0' + digits.slice(2) : digits.startsWith('0') ? digits : '0' + digits;
-  if (normalized.length < 9) return null;
+  if (normalized.length < 9) return { operator: null, isSwitchboard: false };
   try {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 8000);
@@ -52,13 +81,24 @@ export async function lookupPtsOperator(phone: string): Promise<string | null> {
     );
     clearTimeout(t);
     const html = await res.text();
-    const operatorMatch = html.match(/operatör[:\s]+([^<]+)/i) || html.match(/(Telia|Tele2|Telenor|Tre|Comviq|Halebop|Hallon|Vimla)[^<]*/i);
-    if (operatorMatch) {
-      return operatorMatch[1].trim().replace(/\s+/g, ' ').slice(0, 50);
+    let operator: string | null = null;
+    const opMatch = html.match(/operatör[:\s]+([^<\n]+)/i);
+    if (opMatch) {
+      operator = opMatch[1].trim().replace(/\s+/g, ' ').slice(0, 60);
+    } else {
+      for (const op of PTS_OPERATORS) {
+        if (new RegExp(op.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(html)) {
+          operator = op;
+          break;
+        }
+      }
     }
-    return null;
+    const isSwitchboard = operator
+      ? SWITCHBOARD_OPERATORS.some((s) => operator!.toLowerCase().includes(s.toLowerCase()))
+      : false;
+    return { operator, isSwitchboard };
   } catch {
-    return null;
+    return { operator: null, isSwitchboard: false };
   }
 }
 

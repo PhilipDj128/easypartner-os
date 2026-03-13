@@ -10,6 +10,7 @@ import {
   fetchAllabolag,
   normalizePhone,
 } from '@/lib/company-info';
+import { fetchAgencyReputation } from '@/lib/agency-reputation';
 
 const BLOCKED_DOMAINS = [
   'wikipedia.org',
@@ -132,6 +133,9 @@ function calculateLeadScore(flags: {
   pays_catalog?: boolean;
   buys_leads?: boolean;
   extra_domains_count?: number;
+  agency_trustpilot_under_3?: boolean;
+  agency_on_warning_list?: boolean;
+  agency_negative_reviews_10_plus?: boolean;
 }): number {
   let score = 0;
   if (flags.built_by_other) score += 25;
@@ -145,6 +149,9 @@ function calculateLeadScore(flags: {
   if (flags.no_meta_desc) score += 10;
   if (flags.poor_seo) score += 20;
   score += Math.min(50, (flags.extra_domains_count || 0) * 10);
+  if (flags.agency_trustpilot_under_3) score += 30;
+  if (flags.agency_on_warning_list) score += 40;
+  if (flags.agency_negative_reviews_10_plus) score += 20;
   return Math.min(100, Math.max(1, score));
 }
 
@@ -324,6 +331,29 @@ export async function POST(request: Request) {
           if (analysis.no_meta_desc) issues.push('no_meta_desc');
           if (poor_seo) issues.push('poor_seo');
 
+          const builtByAgency = analysis.built_by_agency || analysis.built_by_text;
+
+          let agency_reputation: {
+            agency_name: string;
+            trustpilot_rating: number | null;
+            trustpilot_url: string | null;
+            negative_review_count: number;
+            on_warning_list: boolean;
+            warned: boolean;
+            hot_lead: boolean;
+          } | null = null;
+
+          if (builtByAgency) {
+            try {
+              agency_reputation = await fetchAgencyReputation(
+                builtByAgency,
+                (q) => searchSerp(q, 'Sweden', 10)
+              );
+            } catch {
+              //
+            }
+          }
+
           const score = calculateLeadScore({
             built_by_other: analysis.built_by_other,
             runs_ads,
@@ -336,6 +366,9 @@ export async function POST(request: Request) {
             no_meta_desc: analysis.no_meta_desc,
             poor_seo,
             extra_domains_count: extra_domains.length,
+            agency_trustpilot_under_3: agency_reputation?.trustpilot_rating != null && agency_reputation.trustpilot_rating < 3,
+            agency_on_warning_list: agency_reputation?.on_warning_list ?? false,
+            agency_negative_reviews_10_plus: (agency_reputation?.negative_review_count ?? 0) > 10,
           });
 
           let sales_pitch = '';
@@ -365,8 +398,13 @@ export async function POST(request: Request) {
             sales_pitch = `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
           }
 
-          let contact_phone: string | null =
-            (analysis as { phones?: string[] }).phones?.[0] ?? null;
+          const allPhones = (analysis as { phones?: string[] }).phones ?? [];
+          const directPhones = allPhones.filter((p) => {
+            const d = p.replace(/\D/g, '');
+            const norm = d.startsWith('46') ? '0' + d.slice(2) : d.startsWith('0') ? d : '0' + d;
+            return /^07/.test(norm);
+          });
+          let contact_phone: string | null = allPhones[0] ?? null;
           let company_info: {
             org_number?: string | null;
             revenue?: string | null;
@@ -377,6 +415,7 @@ export async function POST(request: Request) {
             subscriptions?: number | null;
           } = {};
           let pts_operator: string | null = null;
+          let pts_is_switchboard = false;
 
           try {
             const merinfo = await searchMerinfo(companyName);
@@ -389,11 +428,20 @@ export async function POST(request: Request) {
             }
             if (contact_phone) {
               const norm = normalizePhone(contact_phone);
-              pts_operator = await lookupPtsOperator(norm);
+              const ptsResult = await lookupPtsOperator(norm);
+              pts_operator = ptsResult.operator;
+              pts_is_switchboard = ptsResult.isSwitchboard;
+              if (pts_is_switchboard && directPhones.length > 0) {
+                contact_phone = directPhones[0];
+              }
             }
           } catch {
             //
           }
+
+          if (pts_is_switchboard) issues.push('pts_switchboard');
+          if (agency_reputation?.warned) issues.push('agency_warned');
+          if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
 
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,
@@ -418,6 +466,9 @@ export async function POST(request: Request) {
             city,
             company_info: Object.keys(company_info).length ? company_info : null,
             pts_operator,
+            pts_is_switchboard,
+            direct_phones: pts_is_switchboard ? directPhones : [],
+            agency_reputation,
             built_by: analysis.built_by_other ? 'annan_byra' : null,
             built_by_agency: analysis.built_by_agency || analysis.built_by_text || null,
             sales_pitch: sales_pitch || null,

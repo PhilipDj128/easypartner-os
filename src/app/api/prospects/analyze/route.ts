@@ -7,6 +7,7 @@ import { analyzeWebsite } from '@/lib/prospect-analyzer';
 import {
   lookupPtsOperator,
   searchMerinfo,
+  searchAllabolagOrgNumber,
   fetchAllabolag,
   normalizePhone,
 } from '@/lib/company-info';
@@ -401,22 +402,38 @@ export async function POST(request: Request) {
             const merinfo = await searchMerinfo(companyName);
             if (merinfo.phone && !contact_phone) contact_phone = merinfo.phone;
             if (merinfo.subscriptions != null) company_info.subscriptions = merinfo.subscriptions;
-            if (merinfo.orgNumber) {
-              company_info.org_number = merinfo.orgNumber;
-              const allabolag = await fetchAllabolag(merinfo.orgNumber);
-              company_info = { ...company_info, ...allabolag };
-            }
-            const roaring = await fetchRoaringCompanyInfo(website, company_info.org_number ?? merinfo.orgNumber);
-            if (roaring) {
-              if (roaring.org_number) company_info.org_number = roaring.org_number;
-              if (roaring.revenue) company_info.revenue = roaring.revenue;
-              if (roaring.employees) company_info.employees = roaring.employees;
-              if (roaring.ceo) {
-                company_info.ceo = roaring.ceo;
-                decision_makers = [{ name: roaring.ceo, title: 'VD', linkedin_url: '' }];
+
+            let orgNumber: string | null = null;
+            let roaringData: Awaited<ReturnType<typeof fetchRoaringCompanyInfo>> = null;
+
+            if (website) {
+              roaringData = await fetchRoaringCompanyInfo(website, null);
+              if (roaringData?.org_number) {
+                orgNumber = roaringData.org_number.replace(/\D/g, '');
               }
-              if (roaring.board_members?.length) company_info.board_members = roaring.board_members;
-              company_info.active = roaring.active;
+            }
+            if (!orgNumber && merinfo.orgNumber) {
+              orgNumber = merinfo.orgNumber.replace(/\D/g, '');
+            }
+            if (!orgNumber && companyName) {
+              const allabolagOrg = await searchAllabolagOrgNumber(companyName);
+              if (allabolagOrg) orgNumber = allabolagOrg;
+            }
+
+            if (orgNumber) {
+              company_info.org_number = orgNumber.replace(/(\d{6})(\d{4})/, '$1-$2');
+              const allabolag = await fetchAllabolag(orgNumber);
+              company_info = { ...company_info, ...allabolag };
+              if (roaringData) {
+                if (roaringData.revenue) company_info.revenue = roaringData.revenue;
+                if (roaringData.employees) company_info.employees = roaringData.employees;
+                if (roaringData.ceo) {
+                  company_info.ceo = roaringData.ceo;
+                  decision_makers = [{ name: roaringData.ceo, title: 'VD', linkedin_url: '' }];
+                }
+                if (roaringData.board_members?.length) company_info.board_members = roaringData.board_members;
+                company_info.active = roaringData.active;
+              }
             }
             if (contact_phone) {
               const norm = normalizePhone(contact_phone);

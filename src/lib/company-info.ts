@@ -116,6 +116,33 @@ export async function lookupPtsOperator(phone: string): Promise<PtsResult> {
   }
 }
 
+/** Sök allabolag.se efter företagsnamn, returnera org.nr från första träffen */
+export async function searchAllabolagOrgNumber(companyName: string): Promise<string | null> {
+  if (!companyName || companyName.length < 2) return null;
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(
+      `https://www.allabolag.se/sök-på-företagsnamn?q=${encodeURIComponent(companyName)}`,
+      {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      }
+    );
+    clearTimeout(t);
+    const html = await res.text();
+    const withHyphen = html.match(/href="\/(\d{6})-(\d{4})\//);
+    if (withHyphen) return withHyphen[1] + withHyphen[2];
+    const tenDigits = html.match(/href="\/(\d{10})\//);
+    if (tenDigits) return tenDigits[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Hämta företagsinfo från allabolag.se (org-nummer krävs) */
 export async function fetchAllabolag(orgNumber: string): Promise<Partial<CompanyInfo>> {
   const clean = orgNumber.replace(/\D/g, '');
@@ -133,7 +160,15 @@ export async function fetchAllabolag(orgNumber: string): Promise<Partial<Company
     const html = await res.text();
     const info: Partial<CompanyInfo> = { org_number: orgNumber.replace(/\D/g, '').replace(/(\d{6})(\d{4})/, '$1-$2') };
     const revMatch = html.match(/Omsättning\s+20\d{2}[^<]*?([\d\s]+)/i) || html.match(/omsättning[^<]*?([\d\s]+)\s*(?:tkr|Mkr|000)/i);
-    if (revMatch) info.revenue = revMatch[1].trim().replace(/\s+/g, ' ') + ' (senaste år)';
+    if (revMatch) {
+      const revStr = revMatch[1].trim().replace(/\s+/g, '');
+      const revNum = parseInt(revStr, 10);
+      const fullMatch = (revMatch[0] || '').toLowerCase();
+      const isMillions = /mkr|million|mnkr/i.test(fullMatch);
+      if (!isNaN(revNum) && (revNum > 1000 || (isMillions && revNum >= 1))) {
+        info.revenue = revMatch[1].trim().replace(/\s+/g, ' ') + ' (senaste år)';
+      }
+    }
     const empMatch = html.match(/Anställda\s*(\d+)/i) || html.match(/antal\s+anställda[^<]*?(\d+)/i);
     if (empMatch) info.employees = empMatch[1];
     const vdMatch = html.match(/Verkställande\s+direktör[^<]*?([A-ZÅÄÖa-zåäö\s]+?)(?:<\/a>|\(f\s+\d)/i) || html.match(/VD[^<]*?([A-ZÅÄÖa-zåäö\s]+?)(?:<|\(f)/i);

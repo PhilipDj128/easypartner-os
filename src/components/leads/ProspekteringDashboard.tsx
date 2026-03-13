@@ -43,7 +43,7 @@ interface Lead {
   has_facebook_pixel?: boolean;
   pays_catalog?: boolean;
   buys_leads?: boolean;
-  extra_domains?: string[];
+  buys_leads_sites?: { site: string; estimatedMonthly?: number }[];
   catalog_presence?: string[];
   industry_city_rank?: number;
   name_rank?: number | null;
@@ -471,16 +471,28 @@ export function ProspekteringDashboard() {
                       ))}
                     </div>
                     {((lead.pays_catalog || lead.buys_leads || lead.runs_ads) && (
-                      <p className="mt-2 text-xs text-[#94a3b8]">
-                        <span className="font-medium text-white/90">Spenderar pengar på:</span>{' '}
-                        {[
-                          lead.pays_catalog && 'katalog',
-                          lead.buys_leads && 'leads',
-                          lead.runs_ads && 'ads',
-                        ]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </p>
+                      <div className="mt-2 space-y-1 text-xs text-[#94a3b8]">
+                        <p>
+                          <span className="font-medium text-white/90">Spenderar pengar på:</span>{' '}
+                          {[
+                            lead.pays_catalog && 'katalog',
+                            lead.buys_leads && 'leads',
+                            lead.runs_ads && 'ads',
+                          ]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </p>
+                        {lead.buys_leads_sites && lead.buys_leads_sites.length > 0 && (
+                          <p>
+                            <span className="font-medium text-white/90">Betalar för leads på:</span>{' '}
+                            {lead.buys_leads_sites.map((s) =>
+                              s.estimatedMonthly
+                                ? `${s.site} (ca ${s.estimatedMonthly.toLocaleString('sv-SE')} kr/mån)`
+                                : s.site
+                            ).join(', ')}
+                          </p>
+                        )}
+                      </div>
                     ))}
                     {(lead.agency_reputation || lead.built_by_agency) && (
                       <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
@@ -522,23 +534,6 @@ export function ProspekteringDashboard() {
                           <p className="mt-0.5 text-[#94a3b8]">Byrån är aktiv</p>
                         )}
                       </div>
-                    )}
-                    {lead.extra_domains && lead.extra_domains.length > 0 && (
-                      <p className="mt-1 text-xs text-[#94a3b8]">
-                        <span className="font-medium text-white/90">Fler domäner:</span>{' '}
-                        {lead.extra_domains.map((d, i) => (
-                          <a
-                            key={d}
-                            href={`https://${d}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#3b82f6] hover:underline"
-                          >
-                            {d}
-                            {i < lead.extra_domains!.length - 1 ? ', ' : ''}
-                          </a>
-                        ))}
-                      </p>
                     )}
                     {lead.company_info && Object.keys(lead.company_info).length > 0 && (
                       <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">

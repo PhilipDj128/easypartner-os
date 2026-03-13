@@ -35,18 +35,25 @@ const ALL_CATALOG_DOMAINS = [
   'gulasidorna.se',
 ];
 const CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se', 'upplysning.se'];
-const LEAD_SERVICE_DOMAINS = ['offerta.se', 'städa.se', 'stada.se', 'servicefinder.se', 'hittahem.se'];
 
-const SKIP_FOR_EXTRA_DOMAINS = [
-  ...BLOCKED_DOMAINS,
-  ...ALL_CATALOG_DOMAINS,
-  ...LEAD_SERVICE_DOMAINS,
-  'google.com',
-  'youtube.com',
-  'twitter.com',
-  'instagram.com',
-  'maps.google',
-  'youtu.be',
+/** Kataloger som kräver exakt domän/org.nr-match för "Finns på" */
+const STRICT_CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se'];
+
+/** Svenska leadtjänster med beräknat månadspris (kr) – uppskattning */
+const LEAD_SERVICES: { domain: string; name: string; estimatedMonthly?: number }[] = [
+  { domain: 'flytta.se', name: 'flytta.se', estimatedMonthly: 1990 },
+  { domain: 'allaflyttfirmor.se', name: 'allaflyttfirmor.se', estimatedMonthly: 1490 },
+  { domain: 'reco.se', name: 'reco.se', estimatedMonthly: 990 },
+  { domain: 'hittaproffs.se', name: 'hittaproffs.se', estimatedMonthly: 1190 },
+  { domain: 'mittanbud.se', name: 'mittanbud.se', estimatedMonthly: 1290 },
+  { domain: 'buildingpartner.se', name: 'buildingpartner.se', estimatedMonthly: 990 },
+  { domain: 'offerta.se', name: 'offerta.se', estimatedMonthly: 1590 },
+  { domain: 'servicefinder.se', name: 'servicefinder.se', estimatedMonthly: 1390 },
+  { domain: 'städa.se', name: 'städa.se', estimatedMonthly: 990 },
+  { domain: 'stada.se', name: 'städa.se', estimatedMonthly: 990 },
+  { domain: 'hittahem.se', name: 'hittahem.se', estimatedMonthly: 1190 },
+  { domain: 'kk.se', name: 'kk.se', estimatedMonthly: 790 },
+  { domain: 'taskrunner.se', name: 'taskrunner.se', estimatedMonthly: 890 },
 ];
 
 function isBlockedDomain(link: string): boolean {
@@ -66,23 +73,28 @@ function getDomain(link: string): string | null {
   }
 }
 
+interface SerpResult {
+  link?: string;
+  title?: string;
+  snippet?: string;
+}
+
 function parseSerpForCompany(
-  nameResults: { link?: string }[],
+  nameResults: SerpResult[],
   website: string,
-  siteHost: string
+  siteHost: string,
+  orgNumber?: string | null
 ): {
   poor_seo: boolean;
   pays_catalog: boolean;
   buys_leads: boolean;
-  extra_domains: string[];
+  buys_leads_sites: { site: string; estimatedMonthly?: number }[];
   catalog_presence: string[];
   name_rank: number | null;
 } {
   let poor_seo = true;
   let pays_catalog = false;
-  let buys_leads = false;
-  let name_rank: number | null = null;
-  const domainSet = new Set<string>();
+  const buysLeadsSites = new Map<string, number | undefined>();
   const catalogFound = new Set<string>();
 
   for (let i = 0; i < nameResults.length; i++) {
@@ -91,34 +103,58 @@ function parseSerpForCompany(
     const d = getDomain(x.link);
     if (!d) continue;
 
+    const combined = `${x.link || ''} ${x.title || ''} ${x.snippet || ''}`.toLowerCase();
+
     const isMainSite =
       d === siteHost || siteHost.endsWith(d) || d.endsWith(siteHost);
     if (isMainSite) {
       poor_seo = i >= 20;
-      name_rank = i + 1;
     }
+
     if (CATALOG_DOMAINS.some((c) => d.includes(c))) pays_catalog = true;
+
     for (const cat of ALL_CATALOG_DOMAINS) {
-      if (d.includes(cat)) catalogFound.add(cat);
+      if (!d.includes(cat)) continue;
+      if (STRICT_CATALOG_DOMAINS.includes(cat)) {
+        const siteHostNorm = siteHost.toLowerCase().replace(/^www\./, '');
+        const hasDomain = combined.includes(siteHostNorm) || combined.includes(siteHost);
+        const hasOrgNr = orgNumber && combined.replace(/\s/g, '').includes(orgNumber.replace(/\s/g, ''));
+        if (hasDomain || hasOrgNr) {
+          catalogFound.add(cat);
+        }
+      } else {
+        catalogFound.add(cat);
+      }
     }
-    if (LEAD_SERVICE_DOMAINS.some((c) => d.includes(c))) buys_leads = true;
-    if (
-      !isMainSite &&
-      !SKIP_FOR_EXTRA_DOMAINS.some((s) => d.includes(s)) &&
-      d.length > 4
-    ) {
-      domainSet.add(d);
+
+    for (const svc of LEAD_SERVICES) {
+      if (d.includes(svc.domain) && !buysLeadsSites.has(svc.name)) {
+        buysLeadsSites.set(svc.name, svc.estimatedMonthly);
+      }
     }
   }
 
-  const extra_domains = Array.from(domainSet).slice(0, 5);
+  const buys_leads = buysLeadsSites.size > 0;
+  const buys_leads_sites = Array.from(buysLeadsSites.entries()).map(([site, est]) => ({
+    site,
+    estimatedMonthly: est,
+  }));
+
+  const rankIdx = nameResults.findIndex((x) => {
+    const d = x.link ? getDomain(x.link) : null;
+    if (!d) return false;
+    return d === siteHost || siteHost.endsWith(d) || d.endsWith(siteHost);
+  });
+  const name_rank = rankIdx >= 0 ? rankIdx + 1 : null;
+  if (name_rank != null && name_rank > 0) poor_seo = name_rank >= 20;
+
   return {
     poor_seo,
     pays_catalog,
     buys_leads,
-    extra_domains,
+    buys_leads_sites,
     catalog_presence: Array.from(catalogFound),
-    name_rank,
+    name_rank: name_rank != null && name_rank > 0 ? name_rank : null,
   };
 }
 
@@ -134,7 +170,6 @@ function calculateLeadScore(flags: {
   poor_seo?: boolean;
   pays_catalog?: boolean;
   buys_leads?: boolean;
-  extra_domains_count?: number;
   agency_trustpilot_under_3?: boolean;
   agency_on_warning_list?: boolean;
   agency_negative_reviews_10_plus?: boolean;
@@ -151,7 +186,6 @@ function calculateLeadScore(flags: {
   if (flags.no_title_or_short) score += 10;
   if (flags.no_meta_desc) score += 10;
   if (flags.poor_seo) score += 20;
-  score += Math.min(50, (flags.extra_domains_count || 0) * 10);
   if (flags.agency_trustpilot_under_3) score += 30;
   if (flags.agency_on_warning_list) score += 30;
   if (flags.agency_negative_reviews_10_plus) score += 20;
@@ -260,14 +294,14 @@ export async function POST(request: Request) {
               poor_seo: false,
               pays_catalog: false,
               buys_leads: false,
-              extra_domains: [] as string[],
+              buys_leads_sites: [] as { site: string; estimatedMonthly?: number }[],
               catalog_presence: [] as string[],
               name_rank: null as number | null,
             };
             if (!companyName || !website) return empty;
             try {
               const nameSearch = await searchSerp(`"${companyName}"`, 'Sweden');
-              const nameResults = nameSearch?.organic_results || [];
+              const nameResults = (nameSearch?.organic_results || []) as SerpResult[];
               let siteHost = '';
               try {
                 siteHost = new URL(website).hostname.replace(/^www\./, '');
@@ -313,7 +347,7 @@ export async function POST(request: Request) {
           const poor_seo = se.poor_seo;
           const pays_catalog = se.pays_catalog;
           const buys_leads = se.buys_leads;
-          const extra_domains = se.extra_domains;
+          const buys_leads_sites = se.buys_leads_sites ?? [];
           const catalog_presence = se.catalog_presence;
           const name_rank = se.name_rank;
           const industry_city_rank = index + 1;
@@ -382,7 +416,6 @@ export async function POST(request: Request) {
             no_title_or_short: analysis.no_title_or_short,
             no_meta_desc: analysis.no_meta_desc,
             poor_seo,
-            extra_domains_count: extra_domains.length,
             agency_trustpilot_under_3: agency_reputation?.trustpilot_rating != null && agency_reputation.trustpilot_rating < 3,
             agency_on_warning_list: agency_reputation?.on_warning_list ?? false,
             agency_negative_reviews_10_plus: (agency_reputation?.negative_review_count ?? 0) > 10,
@@ -495,7 +528,7 @@ export async function POST(request: Request) {
             has_facebook_pixel: analysis.has_facebook_pixel,
             pays_catalog,
             buys_leads,
-            extra_domains,
+            buys_leads_sites,
             catalog_presence,
             industry_city_rank,
             name_rank,

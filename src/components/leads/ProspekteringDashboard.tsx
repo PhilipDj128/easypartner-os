@@ -66,7 +66,7 @@ const ISSUE_LABELS: Record<string, string> = {
   bytt_byra_nyligen: 'Bytt byrå nyligen',
   poor_seo: 'Dålig SEO',
   runs_ads: 'Google Ads',
-  has_facebook_pixel: 'Facebook Pixel',
+  has_facebook_pixel: 'Kör Facebook-annonsering',
   pays_catalog: 'Betalar katalog',
   buys_leads: 'Köper leads',
   slow_site: 'Långsam sida',
@@ -435,14 +435,18 @@ export function ProspekteringDashboard() {
                         <ul className="mt-1 space-y-1">
                           {lead.decision_makers.map((dm, i) => (
                             <li key={i} className="text-[#94a3b8]">
-                              <a
-                                href={dm.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-medium text-[#3b82f6] hover:underline"
-                              >
-                                {dm.name}
-                              </a>
+                              {dm.linkedin_url ? (
+                                <a
+                                  href={dm.linkedin_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium text-[#3b82f6] hover:underline"
+                                >
+                                  {dm.name}
+                                </a>
+                              ) : (
+                                <span className="font-medium text-white">{dm.name}</span>
+                              )}
                               {' — '}
                               <span>{dm.title}</span>
                             </li>

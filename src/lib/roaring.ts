@@ -56,6 +56,18 @@ function formatRevenueKr(value: number | null | undefined): string {
   }).format(value) + ' kr';
 }
 
+/** Extrahera sökterm från domän: ta bort TLD, ersätt bindestreck med mellanslag */
+export function extractSearchNameFromDomain(website: string): string {
+  try {
+    const host = new URL(website).hostname.replace(/^www\./, '').toLowerCase();
+    const parts = host.split('.');
+    const namePart = parts[0] ?? '';
+    return namePart.replace(/-/g, ' ').trim() || '';
+  } catch {
+    return '';
+  }
+}
+
 /** Sök företag via namn, returnera org.nr från första träffen */
 export async function searchRoaringCompany(name: string): Promise<string | null> {
   const token = await getAccessToken();
@@ -106,11 +118,15 @@ export async function fetchRoaringOverview(orgNumber: string): Promise<RoaringCo
     if (org) info.org_number = String(org).replace(/(\d{6})(\d{4})/, '$1-$2');
 
     const rev = data?.netTurnover ?? data?.net_turnover ?? data?.turnover;
+    let revNum: number | null = null;
     if (typeof rev === 'number') {
-      info.revenue = formatRevenueKr(rev);
+      revNum = rev;
     } else if (typeof rev === 'string') {
-      const n = parseFloat(rev.replace(/\s/g, ''));
-      info.revenue = !isNaN(n) ? formatRevenueKr(n) : rev;
+      revNum = parseFloat(rev.replace(/\s/g, ''));
+      if (isNaN(revNum)) revNum = null;
+    }
+    if (revNum != null && revNum > 1000) {
+      info.revenue = formatRevenueKr(revNum);
     }
 
     const emp = data?.numberOfEmployees ?? data?.number_of_employees ?? data?.employees;
@@ -142,14 +158,16 @@ export async function fetchRoaringOverview(orgNumber: string): Promise<RoaringCo
   }
 }
 
-/** Sök företag och hämta full översikt (search + overview) */
+/** Sök företag och hämta full översikt. Använder domän för sökning (mer tillförlitligt än företagsnamn). */
 export async function fetchRoaringCompanyInfo(
-  companyName: string,
+  website: string,
   existingOrgNumber?: string | null
 ): Promise<RoaringCompanyInfo | null> {
   let org = existingOrgNumber ? String(existingOrgNumber).replace(/\D/g, '') : null;
   if (!org) {
-    org = await searchRoaringCompany(companyName);
+    const searchName = extractSearchNameFromDomain(website);
+    if (!searchName || searchName.length < 2) return null;
+    org = await searchRoaringCompany(searchName);
   }
   if (!org) return null;
   return fetchRoaringOverview(org);

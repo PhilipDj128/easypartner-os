@@ -12,7 +12,6 @@ import {
 } from '@/lib/company-info';
 import { fetchRoaringCompanyInfo } from '@/lib/roaring';
 import { fetchAgencyReputation } from '@/lib/agency-reputation';
-import { searchDecisionMakers } from '@/lib/linkedin-search';
 
 const BLOCKED_DOMAINS = [
   'wikipedia.org',
@@ -111,7 +110,12 @@ function parseSerpForCompany(
       poor_seo = i >= 20;
     }
 
-    if (CATALOG_DOMAINS.some((c) => d.includes(c))) pays_catalog = true;
+    if (CATALOG_DOMAINS.some((c) => d.includes(c))) {
+      const linkLower = (x.link || '').toLowerCase();
+      if (linkLower.includes(siteHost.toLowerCase().replace(/^www\./, ''))) {
+        pays_catalog = true;
+      }
+    }
 
     for (const cat of ALL_CATALOG_DOMAINS) {
       if (!d.includes(cat)) continue;
@@ -372,14 +376,61 @@ export async function POST(request: Request) {
           const builtByAgency = analysis.built_by_agency || analysis.built_by_text;
 
           let decision_makers: { name: string; title: string; linkedin_url: string }[] = [];
+          const allPhones = (analysis as { phones?: string[] }).phones ?? [];
+          const directPhones = allPhones.filter((p) => {
+            const d = p.replace(/\D/g, '');
+            const norm = d.startsWith('46') ? '0' + d.slice(2) : d.startsWith('0') ? d : '0' + d;
+            return /^07/.test(norm);
+          });
+          let contact_phone: string | null = allPhones[0] ?? null;
+          let company_info: {
+            org_number?: string | null;
+            revenue?: string | null;
+            employees?: string | null;
+            ceo?: string | null;
+            board_members?: string[];
+            companies_owned?: number | null;
+            subscriptions?: number | null;
+            active?: boolean;
+          } = {};
+          let pts_operator: string | null = null;
+          let pts_is_switchboard = false;
+          let pts_switchboard_provider: string | null = null;
+
           try {
-            decision_makers = await searchDecisionMakers(companyName);
+            const merinfo = await searchMerinfo(companyName);
+            if (merinfo.phone && !contact_phone) contact_phone = merinfo.phone;
+            if (merinfo.subscriptions != null) company_info.subscriptions = merinfo.subscriptions;
+            if (merinfo.orgNumber) {
+              company_info.org_number = merinfo.orgNumber;
+              const allabolag = await fetchAllabolag(merinfo.orgNumber);
+              company_info = { ...company_info, ...allabolag };
+            }
+            const roaring = await fetchRoaringCompanyInfo(website, company_info.org_number ?? merinfo.orgNumber);
+            if (roaring) {
+              if (roaring.org_number) company_info.org_number = roaring.org_number;
+              if (roaring.revenue) company_info.revenue = roaring.revenue;
+              if (roaring.employees) company_info.employees = roaring.employees;
+              if (roaring.ceo) {
+                company_info.ceo = roaring.ceo;
+                decision_makers = [{ name: roaring.ceo, title: 'VD', linkedin_url: '' }];
+              }
+              if (roaring.board_members?.length) company_info.board_members = roaring.board_members;
+              company_info.active = roaring.active;
+            }
+            if (contact_phone) {
+              const norm = normalizePhone(contact_phone);
+              const ptsResult = await lookupPtsOperator(norm);
+              pts_operator = ptsResult.operator;
+              pts_is_switchboard = ptsResult.isSwitchboard;
+              pts_switchboard_provider = ptsResult.switchboardProvider ?? null;
+              if (pts_is_switchboard && directPhones.length > 0) {
+                contact_phone = directPhones[0];
+              }
+            }
           } catch {
             //
           }
-
-          const vdFound = decision_makers.some((dm) => /vd|ceo|chief\s+executive/i.test(dm.title));
-          if (vdFound) issues.push('vd_hittad');
 
           let agency_reputation: {
             agency_name: string;
@@ -455,63 +506,11 @@ export async function POST(request: Request) {
               : `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
           }
 
-          const allPhones = (analysis as { phones?: string[] }).phones ?? [];
-          const directPhones = allPhones.filter((p) => {
-            const d = p.replace(/\D/g, '');
-            const norm = d.startsWith('46') ? '0' + d.slice(2) : d.startsWith('0') ? d : '0' + d;
-            return /^07/.test(norm);
-          });
-          let contact_phone: string | null = allPhones[0] ?? null;
-          let company_info: {
-            org_number?: string | null;
-            revenue?: string | null;
-            employees?: string | null;
-            ceo?: string | null;
-            board_members?: string[];
-            companies_owned?: number | null;
-            subscriptions?: number | null;
-            active?: boolean;
-          } = {};
-          let pts_operator: string | null = null;
-          let pts_is_switchboard = false;
-          let pts_switchboard_provider: string | null = null;
-
-          try {
-            const merinfo = await searchMerinfo(companyName);
-            if (merinfo.phone && !contact_phone) contact_phone = merinfo.phone;
-            if (merinfo.subscriptions != null) company_info.subscriptions = merinfo.subscriptions;
-            if (merinfo.orgNumber) {
-              company_info.org_number = merinfo.orgNumber;
-              const allabolag = await fetchAllabolag(merinfo.orgNumber);
-              company_info = { ...company_info, ...allabolag };
-            }
-            const roaring = await fetchRoaringCompanyInfo(companyName, company_info.org_number ?? merinfo.orgNumber);
-            if (roaring) {
-              if (roaring.org_number) company_info.org_number = roaring.org_number;
-              if (roaring.revenue) company_info.revenue = roaring.revenue;
-              if (roaring.employees) company_info.employees = roaring.employees;
-              if (roaring.ceo) company_info.ceo = roaring.ceo;
-              if (roaring.board_members?.length) company_info.board_members = roaring.board_members;
-              company_info.active = roaring.active;
-            }
-            if (contact_phone) {
-              const norm = normalizePhone(contact_phone);
-              const ptsResult = await lookupPtsOperator(norm);
-              pts_operator = ptsResult.operator;
-              pts_is_switchboard = ptsResult.isSwitchboard;
-              pts_switchboard_provider = ptsResult.switchboardProvider ?? null;
-              if (pts_is_switchboard && directPhones.length > 0) {
-                contact_phone = directPhones[0];
-              }
-            }
-          } catch {
-            //
-          }
-
           if (pts_is_switchboard) issues.push('pts_switchboard');
           if (agency_reputation?.agency_defunct) issues.push('agency_defunct');
           if (agency_reputation?.warned) issues.push('agency_warned');
           if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
+          if (decision_makers.length > 0) issues.push('vd_hittad');
 
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,

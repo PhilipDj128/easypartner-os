@@ -15,7 +15,11 @@ interface Lead {
   slow_site?: boolean;
   no_mobile?: boolean;
   has_facebook_pixel?: boolean;
+  pays_catalog?: boolean;
+  buys_leads?: boolean;
+  extra_domains?: string[];
   built_by?: string | null;
+  built_by_agency?: string | null;
   sales_pitch?: string | null;
 }
 
@@ -23,6 +27,8 @@ const ISSUE_LABELS: Record<string, string> = {
   poor_seo: 'Dålig SEO',
   runs_ads: 'Google Ads',
   has_facebook_pixel: 'Facebook Pixel',
+  pays_catalog: 'Betalar katalog',
+  buys_leads: 'Köper leads',
   slow_site: 'Långsam sida',
   no_mobile: 'Ingen mobil',
   no_title_or_short: 'Saknar title',
@@ -157,6 +163,8 @@ export function ProspekteringDashboard() {
     if (lead.poor_seo || lead.issues?.includes('poor_seo')) badges.push('poor_seo');
     if (lead.runs_ads || lead.issues?.includes('runs_ads')) badges.push('runs_ads');
     if (lead.has_facebook_pixel || lead.issues?.includes('has_facebook_pixel')) badges.push('has_facebook_pixel');
+    if (lead.pays_catalog || lead.issues?.includes('pays_catalog')) badges.push('pays_catalog');
+    if (lead.buys_leads || lead.issues?.includes('buys_leads')) badges.push('buys_leads');
     if (lead.slow_site || lead.issues?.includes('slow_site')) badges.push('slow_site');
     if (lead.no_mobile || lead.issues?.includes('no_mobile')) badges.push('no_mobile');
     if (lead.issues?.includes('no_title_or_short')) badges.push('no_title_or_short');
@@ -267,10 +275,46 @@ export function ProspekteringDashboard() {
                           key={key}
                           className="inline-flex rounded-full bg-sand-100 px-2 py-0.5 text-xs text-sand-700"
                         >
-                          {ISSUE_LABELS[key] || key}
+                          {key === 'built_by_other' && lead.built_by_agency
+                            ? `Byggd av ${lead.built_by_agency}`
+                            : (ISSUE_LABELS[key] || key)}
                         </span>
                       ))}
                     </div>
+                    {((lead.pays_catalog || lead.buys_leads || lead.runs_ads) && (
+                      <p className="mt-2 text-xs text-sand-600">
+                        <span className="font-medium">Spenderar pengar på:</span>{' '}
+                        {[
+                          lead.pays_catalog && 'katalog',
+                          lead.buys_leads && 'leads',
+                          lead.runs_ads && 'ads',
+                        ]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </p>
+                    ))}
+                    {lead.built_by_agency && (
+                      <p className="mt-1 text-xs text-sand-600">
+                        <span className="font-medium">Hemsida byggd av:</span> {lead.built_by_agency}
+                      </p>
+                    )}
+                    {lead.extra_domains && lead.extra_domains.length > 0 && (
+                      <p className="mt-1 text-xs text-sand-600">
+                        <span className="font-medium">Fler domäner:</span>{' '}
+                        {lead.extra_domains.map((d, i) => (
+                          <a
+                            key={d}
+                            href={`https://${d}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-600 hover:underline"
+                          >
+                            {d}
+                            {i < lead.extra_domains!.length - 1 ? ', ' : ''}
+                          </a>
+                        ))}
+                      </p>
+                    )}
                     {lead.sales_pitch && (
                       <p className="mt-2 text-sm italic text-sand-800 line-clamp-2" title={lead.sales_pitch}>
                         {lead.sales_pitch}

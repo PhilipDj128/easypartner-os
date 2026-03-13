@@ -15,6 +15,21 @@ const BLOCKED_DOMAINS = [
   'linkedin.com',
 ];
 
+const CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se', 'upplysning.se'];
+const LEAD_SERVICE_DOMAINS = ['offerta.se', 'städa.se', 'stada.se', 'servicefinder.se', 'hittahem.se'];
+
+const SKIP_FOR_EXTRA_DOMAINS = [
+  ...BLOCKED_DOMAINS,
+  ...CATALOG_DOMAINS,
+  ...LEAD_SERVICE_DOMAINS,
+  'google.com',
+  'youtube.com',
+  'twitter.com',
+  'instagram.com',
+  'maps.google',
+  'youtu.be',
+];
+
 function isBlockedDomain(link: string): boolean {
   try {
     const host = new URL(link).hostname.replace(/^www\./, '').toLowerCase();
@@ -22,6 +37,55 @@ function isBlockedDomain(link: string): boolean {
   } catch {
     return true;
   }
+}
+
+function getDomain(link: string): string | null {
+  try {
+    return new URL(link).hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function parseSerpForCompany(
+  nameResults: { link?: string }[],
+  website: string,
+  siteHost: string
+): {
+  poor_seo: boolean;
+  pays_catalog: boolean;
+  buys_leads: boolean;
+  extra_domains: string[];
+} {
+  let poor_seo = true;
+  let pays_catalog = false;
+  let buys_leads = false;
+  const domainSet = new Set<string>();
+
+  for (let i = 0; i < nameResults.length; i++) {
+    const x = nameResults[i];
+    if (!x?.link) continue;
+    const d = getDomain(x.link);
+    if (!d) continue;
+
+    const isMainSite =
+      d === siteHost || siteHost.endsWith(d) || d.endsWith(siteHost);
+    if (isMainSite && poor_seo) {
+      poor_seo = i >= 20;
+    }
+    if (CATALOG_DOMAINS.some((c) => d.includes(c))) pays_catalog = true;
+    if (LEAD_SERVICE_DOMAINS.some((c) => d.includes(c))) buys_leads = true;
+    if (
+      !isMainSite &&
+      !SKIP_FOR_EXTRA_DOMAINS.some((s) => d.includes(s)) &&
+      d.length > 4
+    ) {
+      domainSet.add(d);
+    }
+  }
+
+  const extra_domains = Array.from(domainSet).slice(0, 5);
+  return { poor_seo, pays_catalog, buys_leads, extra_domains };
 }
 
 /** Score-faktorer. Max 100. */
@@ -34,16 +98,22 @@ function calculateLeadScore(flags: {
   no_title_or_short?: boolean;
   no_meta_desc?: boolean;
   poor_seo?: boolean;
+  pays_catalog?: boolean;
+  buys_leads?: boolean;
+  extra_domains_count?: number;
 }): number {
   let score = 0;
   if (flags.built_by_other) score += 25;
   if (flags.runs_ads) score += 20;
+  if (flags.buys_leads) score += 20;
   if (flags.has_facebook_pixel) score += 15;
+  if (flags.pays_catalog) score += 15;
   if (flags.slow_site) score += 20;
   if (flags.no_mobile) score += 15;
   if (flags.no_title_or_short) score += 10;
   if (flags.no_meta_desc) score += 10;
   if (flags.poor_seo) score += 20;
+  score += Math.min(50, (flags.extra_domains_count || 0) * 10);
   return Math.min(100, Math.max(1, score));
 }
 
@@ -51,6 +121,8 @@ const ISSUE_TO_LABEL: Record<string, string> = {
   built_by_other: 'Byggd av annan byrå',
   runs_ads: 'Google Ads',
   has_facebook_pixel: 'Facebook Pixel',
+  pays_catalog: 'Betalar katalog',
+  buys_leads: 'Köper leads',
   slow_site: 'Långsam sida',
   no_mobile: 'Ingen mobil',
   no_title_or_short: 'Saknar title',
@@ -116,6 +188,7 @@ export async function POST(request: Request) {
             );
             let analysis = {
               built_by_other: false,
+              built_by_agency: null as string | null,
               runs_ads: false,
               has_facebook_pixel: false,
               slow_site: false,
@@ -136,40 +209,30 @@ export async function POST(request: Request) {
           })
         );
 
-        send({ type: 'progress', message: 'Kontrollerar SEO-ranking...', progress: 50 });
+        send({ type: 'progress', message: 'Kontrollerar kataloger, leads och domäner...', progress: 45 });
 
-        const rankChecks = await Promise.all(
+        const serpExtras = await Promise.all(
           analyses.map(async ({ companyName, website }) => {
-            let poor_seo = false;
-            if (companyName && website) {
+            const empty = {
+              poor_seo: false,
+              pays_catalog: false,
+              buys_leads: false,
+              extra_domains: [] as string[],
+            };
+            if (!companyName || !website) return empty;
+            try {
+              const nameSearch = await searchSerp(`"${companyName}"`, 'Sweden');
+              const nameResults = nameSearch?.organic_results || [];
+              let siteHost = '';
               try {
-                const nameSearch = await searchSerp(`"${companyName}"`, 'Sweden');
-                const nameResults = nameSearch?.organic_results || [];
-                let siteHost = '';
-                try {
-                  siteHost = new URL(website).hostname.replace(/^www\./, '');
-                } catch {
-                  siteHost = website;
-                }
-                const selfRank = nameResults.findIndex((x: { link?: string }) => {
-                  if (!x.link) return false;
-                  try {
-                    const h = new URL(x.link).hostname.replace(/^www\./, '');
-                    return (
-                      h === siteHost ||
-                      siteHost.endsWith(h) ||
-                      h.endsWith(siteHost)
-                    );
-                  } catch {
-                    return false;
-                  }
-                });
-                poor_seo = selfRank < 0 || selfRank >= 20;
+                siteHost = new URL(website).hostname.replace(/^www\./, '');
               } catch {
-                //
+                siteHost = website;
               }
+              return parseSerpForCompany(nameResults, website, siteHost);
+            } catch {
+              return empty;
             }
-            return poor_seo;
           })
         );
 
@@ -201,7 +264,11 @@ export async function POST(request: Request) {
 
         for (let i = 0; i < analyses.length; i++) {
           const { companyName, website, analysis, index } = analyses[i];
-          const poor_seo = rankChecks[i];
+          const se = serpExtras[i];
+          const poor_seo = se.poor_seo;
+          const pays_catalog = se.pays_catalog;
+          const buys_leads = se.buys_leads;
+          const extra_domains = se.extra_domains;
           let runs_ads = analysis.runs_ads;
           const perplexityInfo = perplexityInfoMap[index] || '';
           if (/ja|kör|har ads|google ads/i.test(perplexityInfo)) {
@@ -212,6 +279,8 @@ export async function POST(request: Request) {
           if (analysis.built_by_other) issues.push('built_by_other');
           if (runs_ads) issues.push('runs_ads');
           if (analysis.has_facebook_pixel) issues.push('has_facebook_pixel');
+          if (pays_catalog) issues.push('pays_catalog');
+          if (buys_leads) issues.push('buys_leads');
           if (analysis.slow_site) issues.push('slow_site');
           if (analysis.no_mobile) issues.push('no_mobile');
           if (analysis.no_title_or_short) issues.push('no_title_or_short');
@@ -222,11 +291,14 @@ export async function POST(request: Request) {
             built_by_other: analysis.built_by_other,
             runs_ads,
             has_facebook_pixel: analysis.has_facebook_pixel,
+            pays_catalog,
+            buys_leads,
             slow_site: analysis.slow_site,
             no_mobile: analysis.no_mobile,
             no_title_or_short: analysis.no_title_or_short,
             no_meta_desc: analysis.no_meta_desc,
             poor_seo,
+            extra_domains_count: extra_domains.length,
           });
 
           let sales_pitch = '';
@@ -269,7 +341,11 @@ export async function POST(request: Request) {
             slow_site: analysis.slow_site,
             no_mobile: analysis.no_mobile,
             has_facebook_pixel: analysis.has_facebook_pixel,
+            pays_catalog,
+            buys_leads,
+            extra_domains,
             built_by: analysis.built_by_other ? 'annan_byra' : null,
+            built_by_agency: analysis.built_by_agency || analysis.built_by_text || null,
             sales_pitch: sales_pitch || null,
           };
 

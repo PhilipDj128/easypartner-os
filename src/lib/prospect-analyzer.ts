@@ -5,6 +5,7 @@
 
 export interface SiteAnalysis {
   built_by_other: boolean;
+  built_by_agency: string | null;
   runs_ads: boolean;
   has_facebook_pixel: boolean;
   slow_site: boolean;
@@ -15,17 +16,41 @@ export interface SiteAnalysis {
   load_time_ms: number;
 }
 
-/** Sök i hela HTML – byggd av, created by, powered by, developed by, web by */
+/** Kända byrånamn att söka efter i HTML */
+const KNOWN_AGENCIES = [
+  'Addictivemedia',
+  'Rio',
+  'Wunderkraut',
+  'Wikinggruppen',
+  'Websolution',
+  'Webbfabriken',
+  'Webstep',
+  'Webmeister',
+  'Nordicmade',
+  'Digitalbyrå',
+  'Awave',
+  'Zooma',
+  'Stendahls',
+  'Doe',
+  'Familiar',
+  'Borg',
+  'Hemnet',
+  'Cabonline',
+];
+
+/** Generiska fraser + extraktion av byrånamn: built by, created by, powered by, design by, av */
 const BUILT_BY_PATTERNS = [
   /byggd\s+av\s+([^<"'\n]+)/i,
   /created\s+by\s+([^<"'\n]+)/i,
   /powered\s+by\s+([^<"'\n]+)/i,
   /developed\s+by\s+([^<"'\n]+)/i,
   /web\s+by\s+([^<"'\n]+)/i,
-  /skapad\s+av\s+([^<"'\n]+)/i,
+  /design\s+by\s+([^<"'\n]+)/i,
   /designad\s+av\s+([^<"'\n]+)/i,
+  /skapad\s+av\s+([^<"'\n]+)/i,
   /utvecklad\s+av\s+([^<"'\n]+)/i,
   /made\s+by\s+([^<"'\n]+)/i,
+  /\bav\s+([A-ZÅÄÖa-zåäö][A-Za-zåäö0-9&\s\-]+?)(?:\s*[|–\-]|\s*$|<)/i,
 ];
 
 /** Google Ads: gtag, googletag, adsbygoogle */
@@ -43,6 +68,7 @@ const FACEBOOK_PIXEL_PATTERNS = [/fbq\s*\(|fbq\./i, /facebook[\s-]?pixel/i];
 export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
   const result: SiteAnalysis = {
     built_by_other: false,
+    built_by_agency: null,
     runs_ads: false,
     has_facebook_pixel: false,
     slow_site: false,
@@ -80,15 +106,29 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
 
   result.slow_site = result.load_time_ms > 2000;
 
-  /** Sök i hela HTML efter byggd av / created by / powered by / developed by / web by */
-  for (const pattern of BUILT_BY_PATTERNS) {
-    const m = html.match(pattern);
-    if (m) {
-      const text = m[1].trim().replace(/<[^>]+>/g, '').slice(0, 80);
-      if (text && !/wix|wordpress|squarespace|webflow|shopify/i.test(text)) {
-        result.built_by_other = true;
-        result.built_by_text = text;
-        break;
+  /** Först: sök efter kända byrånamn */
+  for (const agency of KNOWN_AGENCIES) {
+    const re = new RegExp(agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (re.test(html)) {
+      result.built_by_other = true;
+      result.built_by_agency = agency;
+      result.built_by_text = agency;
+      break;
+    }
+  }
+
+  /** Om ingen känd byrå: sök generiska fraser */
+  if (!result.built_by_agency) {
+    for (const pattern of BUILT_BY_PATTERNS) {
+      const m = html.match(pattern);
+      if (m) {
+        const text = m[1].trim().replace(/<[^>]+>/g, '').slice(0, 80);
+        if (text && !/wix|wordpress|squarespace|webflow|shopify|google|microsoft/i.test(text)) {
+          result.built_by_other = true;
+          result.built_by_agency = text;
+          result.built_by_text = text;
+          break;
+        }
       }
     }
   }

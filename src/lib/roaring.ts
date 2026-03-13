@@ -68,8 +68,30 @@ export function extractSearchNameFromDomain(website: string): string {
   }
 }
 
-/** Sök företag via namn, returnera org.nr från första träffen */
-export async function searchRoaringCompany(name: string): Promise<string | null> {
+/** Org.nr för kända felaktiga träffar (t.ex. kommuner som dyker upp vid städ-sökningar) */
+const BLOCKED_ORG_NUMBERS = new Set(['2265716567']); // Västerås stad
+
+/** Normalisera för jämförelse: åäö -> aao, små bokstäver */
+function normalizeForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/å/g, 'a')
+    .replace(/ä/g, 'a')
+    .replace(/ö/g, 'o')
+    .replace(/\s+/g, '')
+    .replace(/\W/g, '');
+}
+
+/** Undvik kommuner/regioner som felaktiga träffar vid städ/hem-sökningar */
+function looksLikeMunicipality(companyName: string): boolean {
+  const n = String(companyName).toLowerCase();
+  return /\b(stad|kommun|region|län)\s*$/i.test(n) || /^(västerås|stockholm|göteborg|malmö)\s+stad$/i.test(n);
+}
+
+/** Sök företag via namn, returnera org.nr + företagsnamn för validering */
+export async function searchRoaringCompany(
+  name: string
+): Promise<{ org: string; companyName: string } | null> {
   const token = await getAccessToken();
   if (!token) return null;
   if (!name || name.length < 2) return null;
@@ -82,8 +104,31 @@ export async function searchRoaringCompany(name: string): Promise<string | null>
     const data = (await res.json()) as Record<string, unknown>;
     const hits = (data?.hits ?? data?.companies ?? data?.results) as Array<Record<string, unknown>> | undefined;
     const first = hits?.[0];
+    if (!first) return null;
+
     const org = (first?.organizationNumber ?? first?.organization_number ?? first?.companyId ?? first?.company_id) as string | undefined;
-    return org ? String(org).replace(/\D/g, '') : null;
+    if (!org) return null;
+    const orgClean = String(org).replace(/\D/g, '');
+    if (BLOCKED_ORG_NUMBERS.has(orgClean)) return null;
+
+    const companyName = (first?.companyName ?? first?.company_name ?? first?.name ?? '') as string;
+    const companyNameStr = String(companyName || '').trim();
+    if (looksLikeMunicipality(companyNameStr)) return null;
+
+    const searchNorm = normalizeForMatch(name);
+    const nameNorm = normalizeForMatch(companyNameStr);
+    if (searchNorm.length < 3) return null;
+
+    // Söktermen (från domän) måste finnas i företagsnamnet: "klarastad" i "Klarastad AB"
+    const searchInName = nameNorm.includes(searchNorm);
+    // Eller: första betydande ordet i företagsnamnet måste finnas i söktermen (t.ex. "karolf" i "karolf städservice")
+    const firstWord = companyNameStr.split(/\s+/)[0] || '';
+    const firstWordNorm = normalizeForMatch(firstWord);
+    const nameInSearch = firstWordNorm.length >= 4 && searchNorm.includes(firstWordNorm);
+
+    if (!searchInName && !nameInSearch) return null;
+
+    return { org: orgClean, companyName: companyNameStr };
   } catch {
     return null;
   }
@@ -163,11 +208,12 @@ export async function fetchRoaringCompanyInfo(
   website: string,
   existingOrgNumber?: string | null
 ): Promise<RoaringCompanyInfo | null> {
-  let org = existingOrgNumber ? String(existingOrgNumber).replace(/\D/g, '') : null;
+  let org: string | null = existingOrgNumber ? String(existingOrgNumber).replace(/\D/g, '') : null;
   if (!org) {
     const searchName = extractSearchNameFromDomain(website);
     if (!searchName || searchName.length < 2) return null;
-    org = await searchRoaringCompany(searchName);
+    const hit = await searchRoaringCompany(searchName);
+    org = hit?.org ?? null;
   }
   if (!org) return null;
   return fetchRoaringOverview(org);

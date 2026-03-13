@@ -412,12 +412,12 @@ export async function POST(request: Request) {
                 orgNumber = roaringData.org_number.replace(/\D/g, '');
               }
             }
-            if (!orgNumber && merinfo.orgNumber) {
-              orgNumber = merinfo.orgNumber.replace(/\D/g, '');
-            }
-            if (!orgNumber && companyName) {
-              const allabolagOrg = await searchAllabolagOrgNumber(companyName);
-              if (allabolagOrg) orgNumber = allabolagOrg;
+            if (!orgNumber && !website) {
+              if (merinfo.orgNumber) orgNumber = merinfo.orgNumber.replace(/\D/g, '');
+              if (!orgNumber && companyName) {
+                const allabolagOrg = await searchAllabolagOrgNumber(companyName);
+                if (allabolagOrg) orgNumber = allabolagOrg;
+              }
             }
 
             if (orgNumber) {

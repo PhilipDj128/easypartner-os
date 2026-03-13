@@ -36,36 +36,40 @@ const PTS_OPERATORS = [
   'Telia',
   'Tele2',
   'Tre',
-  'Comviq',
   'Telenor',
+  'Comviq',
   'Hallon',
   'Vimla',
   'Lycamobile',
-  'Fello',
   'Halebop',
   'Boxer',
-  'Mundio',
-  'TDC',
   'Bahnhof',
   'Bredbandsbolaget',
   'IP-Only',
   'Televox',
+  'Effective Mobile',
+  'Saunalahti',
+  'Fello',
+  'Mundio',
+  'TDC',
   'Telavox',
   'Viatel',
   'GlobalConnect',
 ];
-const SWITCHBOARD_OPERATORS = ['Televox', 'Telavox', 'GlobalConnect'];
+
+const SWITCHBOARD_OPERATORS = ['Televox', 'Telavox', 'Benify', 'Telio', 'ipnx', 'Voxo'];
 
 export interface PtsResult {
   operator: string | null;
   isSwitchboard: boolean;
+  switchboardProvider: string | null;
 }
 
 /** Slå upp operatör på PTS nummer.pts.se */
 export async function lookupPtsOperator(phone: string): Promise<PtsResult> {
   const digits = phone.replace(/\D/g, '');
   const normalized = digits.startsWith('46') ? '0' + digits.slice(2) : digits.startsWith('0') ? digits : '0' + digits;
-  if (normalized.length < 9) return { operator: null, isSwitchboard: false };
+  if (normalized.length < 9) return { operator: null, isSwitchboard: false, switchboardProvider: null };
   try {
     const controller = new AbortController();
     const t = setTimeout(() => controller.abort(), 8000);
@@ -93,12 +97,21 @@ export async function lookupPtsOperator(phone: string): Promise<PtsResult> {
         }
       }
     }
-    const isSwitchboard = operator
-      ? SWITCHBOARD_OPERATORS.some((s) => operator!.toLowerCase().includes(s.toLowerCase()))
-      : false;
-    return { operator, isSwitchboard };
+    let switchboardProvider: string | null = null;
+    let isSwitchboard = false;
+    if (operator) {
+      const opLower = operator.toLowerCase();
+      for (const s of SWITCHBOARD_OPERATORS) {
+        if (opLower.includes(s.toLowerCase())) {
+          isSwitchboard = true;
+          switchboardProvider = s;
+          break;
+        }
+      }
+    }
+    return { operator, isSwitchboard, switchboardProvider };
   } catch {
-    return { operator: null, isSwitchboard: false };
+    return { operator: null, isSwitchboard: false, switchboardProvider: null };
   }
 }
 
@@ -127,6 +140,35 @@ export async function fetchAllabolag(orgNumber: string): Promise<Partial<Company
     return info;
   } catch {
     return {};
+  }
+}
+
+/** Sök allabolag.se efter byrånamn, returnera om byrån är likviderad/nedlagd eller har betalningsanmärkningar */
+export async function searchAllabolagAgencyStatus(agencyName: string): Promise<{
+  isDefunct: boolean;
+  hasPaymentRemarks: boolean;
+}> {
+  if (!agencyName || agencyName.length < 3) return { isDefunct: false, hasPaymentRemarks: false };
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 10000);
+    const url = `https://www.allabolag.se/sök-på-företagsnamn?q=${encodeURIComponent(agencyName)}`;
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+    clearTimeout(t);
+    const html = await res.text();
+    const lower = html.toLowerCase();
+    const isDefunct =
+      /likviderad|konkurs|nedlagd|upplöst|avvecklad/i.test(html) ||
+      lower.includes('status') && /inaktiv|likviderad/i.test(html);
+    const hasPaymentRemarks = /betalningsanmärkning|kronofogden|inkasso|betalningsproblem/i.test(html);
+    return { isDefunct, hasPaymentRemarks };
+  } catch {
+    return { isDefunct: false, hasPaymentRemarks: false };
   }
 }
 

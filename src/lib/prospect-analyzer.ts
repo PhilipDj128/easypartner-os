@@ -1,4 +1,5 @@
 import { extractPhonesFromHtml } from './company-info';
+import { lookupHostingProvider } from './dns-hosting';
 
 /**
  * Analyserar en webbplats via fetch (fungerar på Vercel serverless).
@@ -17,6 +18,7 @@ export interface SiteAnalysis {
   built_by_text: string | null;
   load_time_ms: number;
   phones: string[];
+  hosted_at: string | null;
 }
 
 /** Kända byrånamn att söka efter i HTML */
@@ -40,7 +42,6 @@ const KNOWN_AGENCIES = [
   'Hemnet',
   'Cabonline',
   'Effective Media',
-  'Gotevent',
   'Netset',
   'Webbyrån',
   'Webbhuset',
@@ -59,6 +60,29 @@ const KNOWN_AGENCIES = [
   'Strossle',
   'Adnami',
   'Adssets',
+  'Gotevent',
+  'Webbhotell24',
+  'Webbplatsen',
+  'Itea',
+  'Swevolver',
+  'Gullviva',
+  'Webmaster',
+  'Mediabyrån',
+  'Mediaplanet',
+  'Reklambyrån',
+  'Adsensus',
+  'Adrecord',
+  'Nordic Morning',
+  'Comprend',
+  'Pyramid',
+  'Barsmark',
+  'Gullers',
+  'Spoon',
+  'Diplomat',
+  'Springtime',
+  'Currystone',
+  'Oakwood',
+  'Lowe Brindfors',
 ];
 
 /** Generiska fraser + extraktion av byrånamn: built by, created by, powered by, design by, av */
@@ -101,6 +125,7 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
     built_by_text: null,
     load_time_ms: 0,
     phones: [],
+    hosted_at: null,
   };
 
   if (!url || !url.startsWith('http')) return result;
@@ -192,6 +217,12 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
   result.no_meta_desc = !hasMetaDesc;
 
   result.phones = extractPhonesFromHtml(html);
+
+  try {
+    result.hosted_at = await lookupHostingProvider(url);
+  } catch {
+    // DNS-uppslag misslyckades, behåll null
+  }
 
   return result;
 }

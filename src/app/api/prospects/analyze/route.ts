@@ -11,6 +11,7 @@ import {
   normalizePhone,
 } from '@/lib/company-info';
 import { fetchAgencyReputation } from '@/lib/agency-reputation';
+import { searchDecisionMakers } from '@/lib/linkedin-search';
 
 const BLOCKED_DOMAINS = [
   'wikipedia.org',
@@ -136,6 +137,7 @@ function calculateLeadScore(flags: {
   agency_trustpilot_under_3?: boolean;
   agency_on_warning_list?: boolean;
   agency_negative_reviews_10_plus?: boolean;
+  agency_defunct?: boolean;
 }): number {
   let score = 0;
   if (flags.built_by_other) score += 25;
@@ -150,8 +152,9 @@ function calculateLeadScore(flags: {
   if (flags.poor_seo) score += 20;
   score += Math.min(50, (flags.extra_domains_count || 0) * 10);
   if (flags.agency_trustpilot_under_3) score += 30;
-  if (flags.agency_on_warning_list) score += 40;
+  if (flags.agency_on_warning_list) score += 30;
   if (flags.agency_negative_reviews_10_plus) score += 20;
+  if (flags.agency_defunct) score += 25;
   return Math.min(100, Math.max(1, score));
 }
 
@@ -333,6 +336,16 @@ export async function POST(request: Request) {
 
           const builtByAgency = analysis.built_by_agency || analysis.built_by_text;
 
+          let decision_makers: { name: string; title: string; linkedin_url: string }[] = [];
+          try {
+            decision_makers = await searchDecisionMakers(companyName);
+          } catch {
+            //
+          }
+
+          const vdFound = decision_makers.some((dm) => /vd|ceo|chief\s+executive/i.test(dm.title));
+          if (vdFound) issues.push('vd_hittad');
+
           let agency_reputation: {
             agency_name: string;
             trustpilot_rating: number | null;
@@ -341,6 +354,9 @@ export async function POST(request: Request) {
             on_warning_list: boolean;
             warned: boolean;
             hot_lead: boolean;
+            google_reviews_count?: number | null;
+            google_rating_avg?: number | null;
+            agency_defunct?: boolean;
           } | null = null;
 
           if (builtByAgency) {
@@ -369,33 +385,40 @@ export async function POST(request: Request) {
             agency_trustpilot_under_3: agency_reputation?.trustpilot_rating != null && agency_reputation.trustpilot_rating < 3,
             agency_on_warning_list: agency_reputation?.on_warning_list ?? false,
             agency_negative_reviews_10_plus: (agency_reputation?.negative_review_count ?? 0) > 10,
+            agency_defunct: agency_reputation?.agency_defunct ?? false,
           });
 
           let sales_pitch = '';
+          const dmName = decision_makers.find((dm) => /vd|ceo|chief/i.test(dm.title))?.name;
           if (claude && issues.length > 0) {
             try {
               const issueLabels = issues
                 .map((k) => ISSUE_TO_LABEL[k] || k)
                 .join(', ');
+              const dmHint = dmName
+                ? ` Inkludera beslutsfattaren ${dmName} i säljargumentet, t.ex. "Ring ${dmName} på ${companyName}".`
+                : '';
               const msg = await claude.messages.create({
                 model: 'claude-sonnet-4-20250514',
-                max_tokens: 120,
+                max_tokens: 150,
                 messages: [
                   {
                     role: 'user',
-                    content: `Du är säljare på EasyPartner. Skriv ett konkret säljargument på svenska till ${companyName} baserat på dessa problem: ${issueLabels}. Max 2 meningar. Inga hälsningsfraser. Direkt till poängen.`,
+                    content: `Du är säljare på EasyPartner. Skriv ett konkret säljargument på svenska till ${companyName} baserat på dessa problem: ${issueLabels}. Max 2 meningar. Inga hälsningsfraser. Direkt till poängen.${dmHint}`,
                   },
                 ],
               });
               const txt = (msg.content[0] as { text?: string })?.text ?? '';
-              sales_pitch = txt.slice(0, 300).trim();
+              sales_pitch = txt.slice(0, 350).trim();
             } catch {
               //
             }
           }
           if (!sales_pitch && issues.length > 0) {
             const top = ISSUE_TO_LABEL[issues[0]] || issues[0];
-            sales_pitch = `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
+            sales_pitch = dmName
+              ? `Ring ${dmName} på ${companyName} — de behöver hjälp med ${top.toLowerCase()}.`
+              : `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
           }
 
           const allPhones = (analysis as { phones?: string[] }).phones ?? [];
@@ -416,6 +439,7 @@ export async function POST(request: Request) {
           } = {};
           let pts_operator: string | null = null;
           let pts_is_switchboard = false;
+          let pts_switchboard_provider: string | null = null;
 
           try {
             const merinfo = await searchMerinfo(companyName);
@@ -431,6 +455,7 @@ export async function POST(request: Request) {
               const ptsResult = await lookupPtsOperator(norm);
               pts_operator = ptsResult.operator;
               pts_is_switchboard = ptsResult.isSwitchboard;
+              pts_switchboard_provider = ptsResult.switchboardProvider ?? null;
               if (pts_is_switchboard && directPhones.length > 0) {
                 contact_phone = directPhones[0];
               }
@@ -440,6 +465,7 @@ export async function POST(request: Request) {
           }
 
           if (pts_is_switchboard) issues.push('pts_switchboard');
+          if (agency_reputation?.agency_defunct) issues.push('agency_defunct');
           if (agency_reputation?.warned) issues.push('agency_warned');
           if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
 
@@ -467,10 +493,13 @@ export async function POST(request: Request) {
             company_info: Object.keys(company_info).length ? company_info : null,
             pts_operator,
             pts_is_switchboard,
+            pts_switchboard_provider,
             direct_phones: pts_is_switchboard ? directPhones : [],
             agency_reputation,
             built_by: analysis.built_by_other ? 'annan_byra' : null,
             built_by_agency: analysis.built_by_agency || analysis.built_by_text || null,
+            hosted_at: (analysis as { hosted_at?: string | null }).hosted_at ?? null,
+            decision_makers: decision_makers.length > 0 ? decision_makers : null,
             sales_pitch: sales_pitch || null,
           };
 

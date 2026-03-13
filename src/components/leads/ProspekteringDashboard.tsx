@@ -21,6 +21,9 @@ interface AgencyReputation {
   on_warning_list: boolean;
   warned: boolean;
   hot_lead: boolean;
+  google_reviews_count?: number | null;
+  google_rating_avg?: number | null;
+  agency_defunct?: boolean;
 }
 
 interface Lead {
@@ -47,14 +50,18 @@ interface Lead {
   company_info?: CompanyInfo | null;
   pts_operator?: string | null;
   pts_is_switchboard?: boolean;
+  pts_switchboard_provider?: string | null;
   direct_phones?: string[];
   agency_reputation?: AgencyReputation | null;
   built_by?: string | null;
   built_by_agency?: string | null;
+  hosted_at?: string | null;
+  decision_makers?: { name: string; title: string; linkedin_url: string }[] | null;
   sales_pitch?: string | null;
 }
 
 const ISSUE_LABELS: Record<string, string> = {
+  bytt_byra_nyligen: 'Bytt byrå nyligen',
   poor_seo: 'Dålig SEO',
   runs_ads: 'Google Ads',
   has_facebook_pixel: 'Facebook Pixel',
@@ -67,8 +74,10 @@ const ISSUE_LABELS: Record<string, string> = {
   no_meta_desc: 'Saknar meta',
   built_by_other: 'Byggd av annan byrå',
   pts_switchboard: 'Växel',
-  agency_warned: 'Varnad byrå ⚠️',
+  agency_warned: 'Varning: Byrån har dåliga recensioner',
   agency_hot_lead: 'Missnöjd med byrå',
+  agency_defunct: 'Byrån är nedlagd',
+  vd_hittad: 'VD hittad',
 };
 
 function getScoreColor(score: number): string {
@@ -100,6 +109,8 @@ export function ProspekteringDashboard() {
   const [progress, setProgress] = useState(0);
   const [addingId, setAddingId] = useState<string | null>(null);
   const [filterHighScore, setFilterHighScore] = useState(false);
+  const [monitoringRunning, setMonitoringRunning] = useState(false);
+  const [healthCheckId, setHealthCheckId] = useState<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,8 +228,10 @@ export function ProspekteringDashboard() {
     if (lead.issues?.includes('no_meta_desc')) badges.push('no_meta_desc');
     if (lead.built_by || lead.issues?.includes('built_by_other')) badges.push('built_by_other');
     if (lead.pts_is_switchboard || lead.issues?.includes('pts_switchboard')) badges.push('pts_switchboard');
+    if (lead.agency_reputation?.agency_defunct || lead.issues?.includes('agency_defunct')) badges.push('agency_defunct');
     if (lead.agency_reputation?.warned || lead.issues?.includes('agency_warned')) badges.push('agency_warned');
     if (lead.agency_reputation?.hot_lead || lead.issues?.includes('agency_hot_lead')) badges.push('agency_hot_lead');
+    if (lead.issues?.includes('vd_hittad')) badges.push('vd_hittad');
     return badges;
   };
 
@@ -256,6 +269,32 @@ export function ProspekteringDashboard() {
               className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600 disabled:opacity-50"
             >
               {loading ? 'Analyserar…' : 'Starta prospektering'}
+            </button>
+            <button
+              type="button"
+              disabled={loading || monitoringRunning}
+              onClick={async () => {
+                setMonitoringRunning(true);
+                try {
+                  const res = await fetch('/api/monitoring', { method: 'POST' });
+                  const data = await res.json().catch(() => ({}));
+                  if (res.ok && data.new_leads > 0) {
+                    router.refresh();
+                    alert(`Bevakning klar. ${data.new_leads} nya lead skapade (byråbyte upptäckt).`);
+                  } else if (res.ok) {
+                    alert(`Bevakning klar. ${data.checked} domäner kontrollerade. Inga byråbyten hittades.`);
+                  } else {
+                    alert(data.error || 'Bevakning misslyckades');
+                  }
+                } catch {
+                  alert('Bevakning misslyckades');
+                } finally {
+                  setMonitoringRunning(false);
+                }
+              }}
+              className="rounded-lg border border-sand-300 bg-white px-4 py-2.5 text-sm font-medium text-sand-700 hover:bg-sand-50 disabled:opacity-50"
+            >
+              {monitoringRunning ? 'Kör bevakning…' : 'Starta bevakning'}
             </button>
           </div>
           {loading && (
@@ -301,9 +340,15 @@ export function ProspekteringDashboard() {
                     : 'border-sand-200 bg-white'
                 }`}
               >
-                {lead.agency_reputation?.on_warning_list && (
+                {(lead.agency_reputation?.on_warning_list ||
+                  (lead.agency_reputation?.trustpilot_rating != null && lead.agency_reputation.trustpilot_rating < 3)) && (
                   <div className="bg-red-100 border-b border-red-200 px-4 py-2 text-sm font-medium text-red-800">
-                    ⚠️ Varnad byrå — kundens nuvarande byrå finns på Svensk Handels varningslista
+                    ⚠️ Varning: Byrån har dåliga recensioner
+                  </div>
+                )}
+                {lead.agency_reputation?.agency_defunct && (
+                  <div className="bg-amber-100 border-b border-amber-200 px-4 py-2 text-sm font-medium text-amber-800">
+                    Byrån är nedlagd — kunden har ingen support
                   </div>
                 )}
                 {lead.agency_reputation?.hot_lead && (
@@ -346,6 +391,11 @@ export function ProspekteringDashboard() {
                         {lead.pts_operator && (
                           <span className="text-xs text-sand-600">Operatör: {lead.pts_operator}</span>
                         )}
+                        {lead.pts_is_switchboard && lead.pts_switchboard_provider && (
+                          <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                            Växel: {lead.pts_switchboard_provider}
+                          </span>
+                        )}
                         {lead.pts_is_switchboard && lead.direct_phones && lead.direct_phones.length > 0 && (
                           <span className="text-xs text-sand-600">
                             Direktnummer: {lead.direct_phones.slice(0, 2).map(formatPhone).join(', ')}
@@ -368,6 +418,35 @@ export function ProspekteringDashboard() {
                         <span className="font-medium">Finns på:</span> {lead.catalog_presence.join(', ')}
                       </p>
                     )}
+                    {lead.hosted_at && (
+                      <p className="mt-1 text-xs text-sand-600">
+                        <span className="font-medium">Hostad på:</span>{' '}
+                        <span className="inline-flex rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-700">
+                          {lead.hosted_at}
+                        </span>
+                      </p>
+                    )}
+                    {lead.decision_makers && lead.decision_makers.length > 0 && (
+                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
+                        <p className="font-medium text-sand-800">Beslutsfattare</p>
+                        <ul className="mt-1 space-y-1">
+                          {lead.decision_makers.map((dm, i) => (
+                            <li key={i} className="text-sand-600">
+                              <a
+                                href={dm.linkedin_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-brand-600 hover:underline"
+                              >
+                                {dm.name}
+                              </a>
+                              {' — '}
+                              <span>{dm.title}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full px-3 py-0.5 text-sm font-medium ${getScoreColor(lead.score)}`}
@@ -377,10 +456,18 @@ export function ProspekteringDashboard() {
                       {getIssueBadges(lead).map((key) => (
                         <span
                           key={key}
-                          className="inline-flex rounded-full bg-sand-100 px-2 py-0.5 text-xs text-sand-700"
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                            key === 'agency_warned' ? 'bg-red-100 text-red-800' :
+                            key === 'agency_defunct' ? 'bg-amber-100 text-amber-800' :
+                            key === 'pts_switchboard' && lead.pts_switchboard_provider
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-sand-100 text-sand-700'
+                          }`}
                         >
                           {key === 'built_by_other' && lead.built_by_agency
                             ? `Byggd av ${lead.built_by_agency}`
+                            :                             key === 'pts_switchboard' && lead.pts_switchboard_provider
+                            ? `Växel: ${lead.pts_switchboard_provider}`
                             : (ISSUE_LABELS[key] || key)}
                         </span>
                       ))}
@@ -419,6 +506,22 @@ export function ProspekteringDashboard() {
                           >
                             Se Trustpilot →
                           </a>
+                        )}
+                        {lead.agency_reputation?.google_reviews_count != null && (
+                          <p className="mt-0.5 text-sand-600">
+                            Google: {lead.agency_reputation.google_reviews_count} recensioner
+                            {lead.agency_reputation?.google_rating_avg != null &&
+                              ` • ${lead.agency_reputation.google_rating_avg.toFixed(1)}/5`}
+                          </p>
+                        )}
+                        {lead.agency_reputation?.on_warning_list && (
+                          <p className="mt-0.5 font-medium text-red-700">⚠️ Finns på varningslistan</p>
+                        )}
+                        {lead.agency_reputation?.agency_defunct && (
+                          <p className="mt-0.5 font-medium text-amber-700">Byrån är nedlagd</p>
+                        )}
+                        {lead.agency_reputation && !lead.agency_reputation.agency_defunct && lead.built_by_agency && (
+                          <p className="mt-0.5 text-sand-500">Byrån är aktiv</p>
                         )}
                       </div>
                     )}
@@ -473,14 +576,51 @@ export function ProspekteringDashboard() {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAddToCrm(lead)}
-                    disabled={addingId === lead.id}
-                    className="shrink-0 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
-                  >
-                    {addingId === lead.id ? 'Lägger till…' : 'Lägg till i CRM'}
-                  </button>
+                  <div className="shrink-0 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCrm(lead)}
+                      disabled={addingId === lead.id}
+                      className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                    >
+                      {addingId === lead.id ? 'Lägger till…' : 'Lägg till i CRM'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setHealthCheckId(lead.id);
+                        try {
+                          const res = await fetch('/api/health-check', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              website: lead.website,
+                              company_name: lead.company_name,
+                            }),
+                          });
+                          if (!res.ok) {
+                            const err = await res.json().catch(() => ({}));
+                            throw new Error(err.error || 'Kunde inte generera hälsokoll');
+                          }
+                          const blob = await res.blob();
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `halsokoll-${lead.company_name.replace(/[^a-z0-9]/gi, '-')}.pdf`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        } catch (e) {
+                          alert(e instanceof Error ? e.message : 'Hälsokoll misslyckades');
+                        } finally {
+                          setHealthCheckId(null);
+                        }
+                      }}
+                      disabled={healthCheckId === lead.id}
+                      className="rounded-lg border border-sand-300 bg-white px-3 py-1.5 text-xs font-medium text-sand-700 hover:bg-sand-50 disabled:opacity-50"
+                    >
+                      {healthCheckId === lead.id ? 'Genererar…' : 'Generera hälsokoll'}
+                    </button>
+                  </div>
                 </div>
                 </div>
               </div>

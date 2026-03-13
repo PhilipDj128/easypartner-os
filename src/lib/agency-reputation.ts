@@ -1,6 +1,8 @@
 /**
- * Byråns rykte: Trustpilot, varningslista, negativa recensioner.
+ * Byråns rykte: Trustpilot, varningslista, negativa recensioner, Google, allabolag.
  */
+
+import { searchAllabolagAgencyStatus } from './company-info';
 
 export interface AgencyReputation {
   agency_name: string;
@@ -10,9 +12,12 @@ export interface AgencyReputation {
   on_warning_list: boolean;
   warned: boolean;
   hot_lead: boolean;
+  google_reviews_count: number | null;
+  google_rating_avg: number | null;
+  agency_defunct: boolean;
 }
 
-const VARNINGSlista_URL = 'https://www.svenskhandel.se/sakerhet/varningslistan/';
+const VARNINGSlista_URL = 'https://www.svenskhandel.se/varningslistan/';
 
 /** Hämta varningslistan och kolla om byrånamn finns */
 export async function checkVarningslistan(agencyName: string): Promise<boolean> {
@@ -59,6 +64,9 @@ export async function fetchAgencyReputation(
     on_warning_list: false,
     warned: false,
     hot_lead: false,
+    google_reviews_count: null,
+    google_rating_avg: null,
+    agency_defunct: false,
   };
 
   if (!agencyName || agencyName.length < 2) return result;
@@ -68,23 +76,39 @@ export async function fetchAgencyReputation(
     `"${agencyName}" bluff`,
     `"${agencyName}" varning`,
     `"${agencyName}" Trustpilot`,
+    `"${agencyName}" recensioner omdöme bluff`,
   ];
 
   let trustpilotUrl: string | null = null;
   let trustpilotRating: number | null = null;
   let negativeCount = 0;
+  let googleReviewsCount: number | null = null;
+  let googleRatingAvg: number | null = null;
 
   try {
-    const [recensioner, bluff, varning, trustpilot] = await Promise.all(
+    const serpResults = await Promise.all(
       searches.map((q) => searchSerpFn(q).catch(() => ({ organic_results: [] })))
     );
 
-    const allResults = [
-      ...(recensioner?.organic_results || []),
-      ...(bluff?.organic_results || []),
-      ...(varning?.organic_results || []),
-      ...(trustpilot?.organic_results || []),
-    ];
+    const allResults = serpResults.flatMap((r) => r?.organic_results || []);
+
+    for (const r of allResults) {
+      const snippet = (r.snippet || '') + (r.title || '');
+      const countMatch = snippet.match(/(\d[\d\s]*)\s*recensioner/i) || snippet.match(/(\d[\d\s]*)\s*omdömen/i);
+      if (countMatch) {
+        const n = parseInt(countMatch[1].replace(/\s/g, ''), 10);
+        if (!isNaN(n) && (googleReviewsCount == null || n > googleReviewsCount)) {
+          googleReviewsCount = n;
+        }
+      }
+      const ratingMatch = snippet.match(/([0-9][,.][0-9])\s*(?:av|\/)\s*5|([0-9][,.][0-9])\s*\(/i);
+      if (ratingMatch) {
+        const rv = parseFloat((ratingMatch[1] || ratingMatch[2] || '0').replace(',', '.'));
+        if (!isNaN(rv) && rv >= 1 && rv <= 5 && (googleRatingAvg == null || rv > googleRatingAvg)) {
+          googleRatingAvg = rv;
+        }
+      }
+    }
 
     for (const r of allResults) {
       const link = (r.link || '').toLowerCase();
@@ -106,9 +130,15 @@ export async function fetchAgencyReputation(
     result.trustpilot_rating = trustpilotRating;
     result.trustpilot_url = trustpilotUrl;
     result.negative_review_count = Math.min(negativeCount, 50);
+    result.google_reviews_count = googleReviewsCount;
+    result.google_rating_avg = googleRatingAvg;
 
-    const onWarningList = await checkVarningslistan(agencyName);
+    const [onWarningList, allabolagStatus] = await Promise.all([
+      checkVarningslistan(agencyName),
+      searchAllabolagAgencyStatus(agencyName),
+    ]);
     result.on_warning_list = onWarningList;
+    result.agency_defunct = allabolagStatus.isDefunct || allabolagStatus.hasPaymentRemarks;
 
     result.warned = onWarningList || (trustpilotRating != null && trustpilotRating < 3) || negativeCount > 10;
 

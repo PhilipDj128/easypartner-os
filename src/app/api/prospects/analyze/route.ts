@@ -4,6 +4,12 @@ import { searchSerp } from '@/lib/serpapi';
 import { perplexitySearch } from '@/lib/perplexity';
 import Anthropic from '@anthropic-ai/sdk';
 import { analyzeWebsite } from '@/lib/prospect-analyzer';
+import {
+  lookupPtsOperator,
+  searchMerinfo,
+  fetchAllabolag,
+  normalizePhone,
+} from '@/lib/company-info';
 
 const BLOCKED_DOMAINS = [
   'wikipedia.org',
@@ -15,12 +21,22 @@ const BLOCKED_DOMAINS = [
   'linkedin.com',
 ];
 
+const ALL_CATALOG_DOMAINS = [
+  'hitta.se',
+  'eniro.se',
+  'merinfo.se',
+  'upplysning.se',
+  'ratsit.se',
+  'allabolag.se',
+  'foretagsinfo.se',
+  'gulasidorna.se',
+];
 const CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se', 'upplysning.se'];
 const LEAD_SERVICE_DOMAINS = ['offerta.se', 'städa.se', 'stada.se', 'servicefinder.se', 'hittahem.se'];
 
 const SKIP_FOR_EXTRA_DOMAINS = [
   ...BLOCKED_DOMAINS,
-  ...CATALOG_DOMAINS,
+  ...ALL_CATALOG_DOMAINS,
   ...LEAD_SERVICE_DOMAINS,
   'google.com',
   'youtube.com',
@@ -56,11 +72,15 @@ function parseSerpForCompany(
   pays_catalog: boolean;
   buys_leads: boolean;
   extra_domains: string[];
+  catalog_presence: string[];
+  name_rank: number | null;
 } {
   let poor_seo = true;
   let pays_catalog = false;
   let buys_leads = false;
+  let name_rank: number | null = null;
   const domainSet = new Set<string>();
+  const catalogFound = new Set<string>();
 
   for (let i = 0; i < nameResults.length; i++) {
     const x = nameResults[i];
@@ -70,10 +90,14 @@ function parseSerpForCompany(
 
     const isMainSite =
       d === siteHost || siteHost.endsWith(d) || d.endsWith(siteHost);
-    if (isMainSite && poor_seo) {
+    if (isMainSite) {
       poor_seo = i >= 20;
+      name_rank = i + 1;
     }
     if (CATALOG_DOMAINS.some((c) => d.includes(c))) pays_catalog = true;
+    for (const cat of ALL_CATALOG_DOMAINS) {
+      if (d.includes(cat)) catalogFound.add(cat);
+    }
     if (LEAD_SERVICE_DOMAINS.some((c) => d.includes(c))) buys_leads = true;
     if (
       !isMainSite &&
@@ -85,7 +109,14 @@ function parseSerpForCompany(
   }
 
   const extra_domains = Array.from(domainSet).slice(0, 5);
-  return { poor_seo, pays_catalog, buys_leads, extra_domains };
+  return {
+    poor_seo,
+    pays_catalog,
+    buys_leads,
+    extra_domains,
+    catalog_presence: Array.from(catalogFound),
+    name_rank,
+  };
 }
 
 /** Score-faktorer. Max 100. */
@@ -197,6 +228,7 @@ export async function POST(request: Request) {
               no_meta_desc: false,
               built_by_text: null as string | null,
               load_time_ms: 0,
+              phones: [] as string[],
             };
             if (website) {
               try {
@@ -218,6 +250,8 @@ export async function POST(request: Request) {
               pays_catalog: false,
               buys_leads: false,
               extra_domains: [] as string[],
+              catalog_presence: [] as string[],
+              name_rank: null as number | null,
             };
             if (!companyName || !website) return empty;
             try {
@@ -269,6 +303,9 @@ export async function POST(request: Request) {
           const pays_catalog = se.pays_catalog;
           const buys_leads = se.buys_leads;
           const extra_domains = se.extra_domains;
+          const catalog_presence = se.catalog_presence;
+          const name_rank = se.name_rank;
+          const industry_city_rank = index + 1;
           let runs_ads = analysis.runs_ads;
           const perplexityInfo = perplexityInfoMap[index] || '';
           if (/ja|kör|har ads|google ads/i.test(perplexityInfo)) {
@@ -328,12 +365,42 @@ export async function POST(request: Request) {
             sales_pitch = `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
           }
 
+          let contact_phone: string | null =
+            (analysis as { phones?: string[] }).phones?.[0] ?? null;
+          let company_info: {
+            org_number?: string | null;
+            revenue?: string | null;
+            employees?: string | null;
+            ceo?: string | null;
+            board_members?: string[];
+            companies_owned?: number | null;
+            subscriptions?: number | null;
+          } = {};
+          let pts_operator: string | null = null;
+
+          try {
+            const merinfo = await searchMerinfo(companyName);
+            if (merinfo.phone && !contact_phone) contact_phone = merinfo.phone;
+            if (merinfo.subscriptions != null) company_info.subscriptions = merinfo.subscriptions;
+            if (merinfo.orgNumber) {
+              company_info.org_number = merinfo.orgNumber;
+              const allabolag = await fetchAllabolag(merinfo.orgNumber);
+              company_info = { ...company_info, ...allabolag };
+            }
+            if (contact_phone) {
+              const norm = normalizePhone(contact_phone);
+              pts_operator = await lookupPtsOperator(norm);
+            }
+          } catch {
+            //
+          }
+
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,
             company_name: companyName,
             website,
             contact_email: null as string | null,
-            contact_phone: null as string | null,
+            contact_phone: contact_phone as string | null,
             score,
             issues,
             poor_seo,
@@ -344,6 +411,13 @@ export async function POST(request: Request) {
             pays_catalog,
             buys_leads,
             extra_domains,
+            catalog_presence,
+            industry_city_rank,
+            name_rank,
+            industry,
+            city,
+            company_info: Object.keys(company_info).length ? company_info : null,
+            pts_operator,
             built_by: analysis.built_by_other ? 'annan_byra' : null,
             built_by_agency: analysis.built_by_agency || analysis.built_by_text || null,
             sales_pitch: sales_pitch || null,

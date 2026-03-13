@@ -3,11 +3,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface CompanyInfo {
+  org_number?: string | null;
+  revenue?: string | null;
+  employees?: string | null;
+  ceo?: string | null;
+  board_members?: string[];
+  companies_owned?: number | null;
+  subscriptions?: number | null;
+}
+
 interface Lead {
   id: string;
   company_name: string;
   website: string;
   contact_email: string | null;
+  contact_phone?: string | null;
   score: number;
   issues: string[];
   poor_seo?: boolean;
@@ -18,6 +29,13 @@ interface Lead {
   pays_catalog?: boolean;
   buys_leads?: boolean;
   extra_domains?: string[];
+  catalog_presence?: string[];
+  industry_city_rank?: number;
+  name_rank?: number | null;
+  industry?: string;
+  city?: string;
+  company_info?: CompanyInfo | null;
+  pts_operator?: string | null;
   built_by?: string | null;
   built_by_agency?: string | null;
   sales_pitch?: string | null;
@@ -47,6 +65,13 @@ function getPriorityStar(score: number): { icon: string; title: string; color: s
   if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-red-600' };
   if (score >= 40) return { icon: '★', title: 'Prioritet: Medel', color: 'text-amber-500' };
   return { icon: '☆', title: 'Prioritet: Låg', color: 'text-gray-400' };
+}
+
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, '');
+  if (d.length === 9 && d.startsWith('07')) return `${d.slice(0, 3)}-${d.slice(3, 6)} ${d.slice(6)}`;
+  if (d.length === 9 && d.startsWith('08')) return `${d.slice(0, 2)}-${d.slice(2, 5)} ${d.slice(5)}`;
+  return phone;
 }
 
 export function ProspekteringDashboard() {
@@ -141,9 +166,14 @@ export function ProspekteringDashboard() {
           company_name: lead.company_name,
           website: lead.website,
           contact_email: lead.contact_email,
-          contact_phone: null,
+          contact_phone: lead.contact_phone ?? null,
           score: lead.score,
           issues: lead.issues,
+          company_info: lead.company_info,
+          name_rank: lead.name_rank,
+          industry_city_rank: lead.industry_city_rank,
+          industry: lead.industry,
+          city: lead.city,
         }),
       });
       if (res.ok) {
@@ -264,6 +294,41 @@ export function ProspekteringDashboard() {
                     >
                       {lead.website}
                     </a>
+                    {(lead.contact_phone && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <a
+                          href={`tel:${lead.contact_phone.replace(/\D/g, '').replace(/^0/, '+46')}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-200"
+                        >
+                          <span>📞</span>
+                          {formatPhone(lead.contact_phone)}
+                        </a>
+                        <a
+                          href={`tel:${lead.contact_phone.replace(/\D/g, '').replace(/^0/, '+46')}`}
+                          className="rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-600"
+                        >
+                          Ring nu
+                        </a>
+                        {lead.pts_operator && (
+                          <span className="text-xs text-sand-600">Operatör: {lead.pts_operator}</span>
+                        )}
+                      </div>
+                    ))}
+                    {(lead.name_rank || lead.industry_city_rank) && (
+                      <p className="mt-2 text-xs text-sand-600">
+                        <span className="font-medium">Google-ranking:</span>{' '}
+                        {lead.name_rank && `#${lead.name_rank} för "${lead.company_name}"`}
+                        {lead.name_rank && lead.industry_city_rank && ' • '}
+                        {lead.industry_city_rank && lead.industry && lead.city && (
+                          <>#{lead.industry_city_rank} för &quot;{lead.industry} {lead.city}&quot;</>
+                        )}
+                      </p>
+                    )}
+                    {lead.catalog_presence && lead.catalog_presence.length > 0 && (
+                      <p className="mt-1 text-xs text-sand-600">
+                        <span className="font-medium">Finns på:</span> {lead.catalog_presence.join(', ')}
+                      </p>
+                    )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full px-3 py-0.5 text-sm font-medium ${getScoreColor(lead.score)}`}
@@ -314,6 +379,34 @@ export function ProspekteringDashboard() {
                           </a>
                         ))}
                       </p>
+                    )}
+                    {lead.company_info && Object.keys(lead.company_info).length > 0 && (
+                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
+                        <p className="font-medium text-sand-800">Företagsinfo</p>
+                        <ul className="mt-1 space-y-0.5 text-sand-600">
+                          {lead.company_info.org_number && (
+                            <li>Org.nr: {lead.company_info.org_number}</li>
+                          )}
+                          {lead.company_info.revenue && (
+                            <li>Omsättning: {lead.company_info.revenue}</li>
+                          )}
+                          {lead.company_info.employees && (
+                            <li>Anställda: {lead.company_info.employees}</li>
+                          )}
+                          {lead.company_info.ceo && (
+                            <li>VD: {lead.company_info.ceo}</li>
+                          )}
+                          {lead.company_info.board_members && lead.company_info.board_members.length > 0 && (
+                            <li>Styrelse: {lead.company_info.board_members.join(', ')}</li>
+                          )}
+                          {lead.company_info.companies_owned != null && (
+                            <li>Registrerade företag (ägare): {lead.company_info.companies_owned}</li>
+                          )}
+                          {lead.company_info.subscriptions != null && (
+                            <li>Abonnemang: {lead.company_info.subscriptions}</li>
+                          )}
+                        </ul>
+                      </div>
                     )}
                     {lead.sales_pitch && (
                       <p className="mt-2 text-sm italic text-sand-800 line-clamp-2" title={lead.sales_pitch}>

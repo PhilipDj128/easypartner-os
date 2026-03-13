@@ -8,7 +8,32 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json();
-    const { company_name, website, contact_email, contact_phone, score, issues } = body;
+    const {
+      company_name,
+      website,
+      contact_email,
+      contact_phone,
+      score,
+      issues,
+      company_info,
+      name_rank,
+      industry_city_rank,
+      industry,
+      city,
+    } = body;
+
+    const notesParts: string[] = [];
+    if (score != null) notesParts.push(`Lead score: ${score}`);
+    if (Array.isArray(issues) && issues.length) notesParts.push(`Problem: ${issues.join(', ')}`);
+    if (name_rank != null) notesParts.push(`Google #${name_rank} för "${company_name}"`);
+    if (industry_city_rank != null && industry && city)
+      notesParts.push(`#${industry_city_rank} för "${industry} ${city}"`);
+    if (company_info && typeof company_info === 'object') {
+      const ci = company_info as Record<string, unknown>;
+      if (ci.org_number) notesParts.push(`Org.nr: ${ci.org_number}`);
+      if (ci.ceo) notesParts.push(`VD: ${ci.ceo}`);
+      if (ci.revenue) notesParts.push(`Omsättning: ${ci.revenue}`);
+    }
 
     const { data: customer, error } = await supabase
       .from('customers')
@@ -17,7 +42,7 @@ export async function POST(request: Request) {
         company: company_name || null,
         email: contact_email || null,
         phone: contact_phone || null,
-        notes: score != null ? `Lead score: ${score}. Problem: ${(issues || []).join(', ')}` : null,
+        notes: notesParts.length ? notesParts.join('. ') : null,
       })
       .select()
       .single();

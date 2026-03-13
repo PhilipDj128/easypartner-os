@@ -1,3 +1,5 @@
+import { extractPhonesFromHtml } from './company-info';
+
 /**
  * Analyserar en webbplats via fetch (fungerar på Vercel serverless).
  * Hämtar hela HTML-källkoden och analyserar djupare för score-beräkning.
@@ -14,6 +16,7 @@ export interface SiteAnalysis {
   no_meta_desc: boolean;
   built_by_text: string | null;
   load_time_ms: number;
+  phones: string[];
 }
 
 /** Kända byrånamn att söka efter i HTML */
@@ -77,6 +80,7 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
     no_meta_desc: false,
     built_by_text: null,
     load_time_ms: 0,
+    phones: [],
   };
 
   if (!url || !url.startsWith('http')) return result;
@@ -166,6 +170,8 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
       html
     );
   result.no_meta_desc = !hasMetaDesc;
+
+  result.phones = extractPhonesFromHtml(html);
 
   return result;
 }

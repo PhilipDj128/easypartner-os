@@ -12,17 +12,17 @@ export default async function CustomersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50 px-8 py-16">
+    <div className="min-h-screen px-6 py-10 lg:px-10 lg:py-12 animate-fade-in">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-12 flex items-center justify-between">
-          <h1 className="font-serif text-3xl font-semibold text-brand-900">Kunder</h1>
+        <div className="mb-10 flex items-center justify-between">
+          <h1 className="font-heading text-3xl font-semibold text-white">Kunder</h1>
           <AddCustomerForm />
         </div>
         {!supabase && (
-          <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 p-5 text-amber-800">
+          <div className="mb-8 rounded-lg border border-amber-500/30 bg-amber-500/10 p-5 text-amber-200">
             Supabase är inte fullt konfigurerad. Lägg till{' '}
-            <code className="rounded bg-amber-100 px-1">SUPABASE_SERVICE_ROLE_KEY</code> i{' '}
-            <code className="rounded bg-amber-100 px-1">.env.local</code>.
+            <code className="rounded bg-amber-500/20 px-1">SUPABASE_SERVICE_ROLE_KEY</code> i{' '}
+            <code className="rounded bg-amber-500/20 px-1">.env.local</code>.
           </div>
         )}
         <CustomerTable customers={customers} />

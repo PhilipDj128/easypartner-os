@@ -178,15 +178,15 @@ export function SEODashboard({
     <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-sm font-medium text-brand-600">Välj kund</label>
+          <label className="block text-sm font-medium text-[#94a3b8]">Välj kund</label>
           <select
             value={selectedCustomerId}
             onChange={(e) => setSelectedCustomerId(e.target.value)}
-            className="mt-1 min-w-[200px] rounded-lg border border-sand-200 px-3 py-2"
+            className="mt-1 min-w-[200px] rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
           >
             <option value="">— Välj kund —</option>
             {customers.map((c) => (
-              <option key={c.id} value={c.id}>
+              <option key={c.id} value={c.id} className="bg-[#111827] text-white">
                 {c.name}
               </option>
             ))}
@@ -196,7 +196,7 @@ export function SEODashboard({
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600"
+            className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
           >
             + Lägg till sökord
           </button>
@@ -204,7 +204,7 @@ export function SEODashboard({
             type="button"
             onClick={handleUpdateRankings}
             disabled={updating || !selectedCustomerId || rankings.length === 0}
-            className="rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+            className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
           >
             {updating ? 'Uppdaterar…' : 'Uppdatera ranking'}
           </button>
@@ -212,7 +212,7 @@ export function SEODashboard({
             type="button"
             onClick={handleAnalyzeAI}
             disabled={optimizing || !selectedCustomerId || rankings.length === 0}
-            className="rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+            className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
           >
             {optimizing ? 'Analyserar…' : 'Analysera med AI'}
           </button>
@@ -222,80 +222,80 @@ export function SEODashboard({
       {selectedCustomerId && (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-sand-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
                 I topp 3
               </p>
-              <p className="mt-2 font-serif text-2xl font-semibold text-brand-900">{top3}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top3}</p>
             </div>
-            <div className="rounded-xl border border-sand-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
                 I topp 10
               </p>
-              <p className="mt-2 font-serif text-2xl font-semibold text-brand-900">{top10}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top10}</p>
             </div>
-            <div className="rounded-xl border border-sand-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
                 I topp 30
               </p>
-              <p className="mt-2 font-serif text-2xl font-semibold text-brand-900">{top30}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top30}</p>
             </div>
           </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
-              <p className="text-sand-200">Laddar sökord…</p>
+              <p className="text-[#94a3b8]">Laddar sökord…</p>
             </div>
           ) : rankings.length === 0 ? (
-            <div className="rounded-xl border border-sand-200 bg-white p-12 text-center shadow-sm">
-              <p className="text-sand-200">Inga bevakade sökord. Lägg till sökord ovan.</p>
+            <div className="glass-card rounded-xl p-12 text-center">
+              <p className="text-[#94a3b8]">Inga bevakade sökord. Lägg till sökord ovan.</p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-xl border border-sand-200 bg-white shadow-sm">
-              <table className="min-w-full divide-y divide-sand-200">
+            <div className="glass-card overflow-hidden rounded-xl">
+              <table className="min-w-full">
                 <thead>
                   <tr>
-                    <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                       Sökord
                     </th>
-                    <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                       Position idag
                     </th>
-                    <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                       Position förra veckan
                     </th>
-                    <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                       Trend
                     </th>
-                    <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                       Sökvolym
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-sand-200">
+                <tbody>
                   {rankings.map((r) => {
                     const trend = getTrend(r.position, r.previous_position);
                     return (
-                      <tr key={r.id} className="transition-colors hover:bg-sand-50">
-                        <td className="px-6 py-5 font-medium text-brand-900">{r.keyword}</td>
-                        <td className="px-6 py-5 text-sand-200">
+                      <tr key={r.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
+                        <td className="px-6 py-5 font-medium text-white">{r.keyword}</td>
+                        <td className="px-6 py-5 text-[#94a3b8]">
                           {r.position ?? '—'}
                         </td>
-                        <td className="px-6 py-5 text-sand-200">
+                        <td className="px-6 py-5 text-[#94a3b8]">
                           {r.previous_position ?? '—'}
                         </td>
                         <td className="px-6 py-5">
                           {trend === 'up' && (
-                            <span className="text-green-600" title="Upp">↑</span>
+                            <span className="text-emerald-400" title="Upp">↑</span>
                           )}
                           {trend === 'down' && (
-                            <span className="text-red-600" title="Ner">↓</span>
+                            <span className="text-rose-400" title="Ner">↓</span>
                           )}
                           {trend === 'unchanged' && (
-                            <span className="text-gray-400" title="Oförändrad">→</span>
+                            <span className="text-[#64748b]" title="Oförändrad">→</span>
                           )}
                         </td>
-                        <td className="px-6 py-5 text-sand-200">
+                        <td className="px-6 py-5 text-[#94a3b8]">
                           {r.search_volume != null
                             ? r.search_volume.toLocaleString('sv-SE')
                             : '—'}
@@ -311,67 +311,67 @@ export function SEODashboard({
       )}
 
       {!selectedCustomerId && (
-        <div className="rounded-xl border border-sand-200 bg-white p-12 text-center shadow-sm">
-          <p className="text-sand-200">Välj en kund för att se bevakade sökord.</p>
+        <div className="glass-card rounded-xl p-12 text-center">
+          <p className="text-[#94a3b8]">Välj en kund för att se bevakade sökord.</p>
         </div>
       )}
 
       {addOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Nytt bevakat sökord</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Nytt bevakat sökord</h3>
             <form onSubmit={handleAddSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-900">Kund *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Domän</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Domän</label>
                 <select
                   name="domain"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj domän —</option>
                   {domains.map((d) => (
-                    <option key={d.id} value={d.domain}>
+                    <option key={d.id} value={d.domain} className="bg-[#111827] text-white">
                       {d.domain}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Sökord *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Sökord *</label>
                 <input
                   type="text"
                   name="keyword"
                   required
                   placeholder="t.ex. webbhotell stockholm"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
                   onClick={() => setAddOpen(false)}
-                  className="rounded-lg border border-sand-200 px-4 py-2 text-sm"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>
@@ -382,21 +382,21 @@ export function SEODashboard({
       )}
 
       {suggestionsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Claudes SEO-förslag</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Claudes SEO-förslag</h3>
             <div className="mt-6 space-y-4">
               <div>
-                <p className="text-sm font-medium text-brand-600">Ny meta-titel</p>
-                <p className="mt-1 rounded-lg bg-sand-50 p-3 text-brand-900">{suggestionsModal.meta_title || '—'}</p>
+                <p className="text-sm font-medium text-[#94a3b8]">Ny meta-titel</p>
+                <p className="mt-1 rounded-lg border border-white/10 bg-white/5 p-3 text-white">{suggestionsModal.meta_title || '—'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-brand-600">Ny meta-beskrivning</p>
-                <p className="mt-1 rounded-lg bg-sand-50 p-3 text-brand-900">{suggestionsModal.meta_description || '—'}</p>
+                <p className="text-sm font-medium text-[#94a3b8]">Ny meta-beskrivning</p>
+                <p className="mt-1 rounded-lg border border-white/10 bg-white/5 p-3 text-white">{suggestionsModal.meta_description || '—'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-brand-600">Innehållsförslag</p>
-                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg bg-sand-50 p-3 text-brand-900">
+                <p className="text-sm font-medium text-[#94a3b8]">Innehållsförslag</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-[#94a3b8]">
                   {suggestionsModal.content_suggestions?.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -404,8 +404,8 @@ export function SEODashboard({
                 </ul>
               </div>
               <div>
-                <p className="text-sm font-medium text-brand-600">Tekniska åtgärder</p>
-                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg bg-sand-50 p-3 text-brand-900">
+                <p className="text-sm font-medium text-[#94a3b8]">Tekniska åtgärder</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-[#94a3b8]">
                   {suggestionsModal.technical_actions?.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -417,7 +417,7 @@ export function SEODashboard({
               <button
                 type="button"
                 onClick={() => setSuggestionsModal(null)}
-                className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600"
+                className="btn-primary rounded-lg px-4 py-2 text-sm text-white"
               >
                 Stäng
               </button>

@@ -10,6 +10,7 @@ import {
   fetchAllabolag,
   normalizePhone,
 } from '@/lib/company-info';
+import { fetchRoaringCompanyInfo } from '@/lib/roaring';
 import { fetchAgencyReputation } from '@/lib/agency-reputation';
 import { searchDecisionMakers } from '@/lib/linkedin-search';
 
@@ -436,6 +437,7 @@ export async function POST(request: Request) {
             board_members?: string[];
             companies_owned?: number | null;
             subscriptions?: number | null;
+            active?: boolean;
           } = {};
           let pts_operator: string | null = null;
           let pts_is_switchboard = false;
@@ -449,6 +451,15 @@ export async function POST(request: Request) {
               company_info.org_number = merinfo.orgNumber;
               const allabolag = await fetchAllabolag(merinfo.orgNumber);
               company_info = { ...company_info, ...allabolag };
+            }
+            const roaring = await fetchRoaringCompanyInfo(companyName, company_info.org_number ?? merinfo.orgNumber);
+            if (roaring) {
+              if (roaring.org_number) company_info.org_number = roaring.org_number;
+              if (roaring.revenue) company_info.revenue = roaring.revenue;
+              if (roaring.employees) company_info.employees = roaring.employees;
+              if (roaring.ceo) company_info.ceo = roaring.ceo;
+              if (roaring.board_members?.length) company_info.board_members = roaring.board_members;
+              company_info.active = roaring.active;
             }
             if (contact_phone) {
               const norm = normalizePhone(contact_phone);

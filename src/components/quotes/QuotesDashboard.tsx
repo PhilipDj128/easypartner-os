@@ -31,10 +31,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-800',
-  opened: 'bg-amber-100 text-amber-800',
-  signed: 'bg-green-100 text-green-800',
+  draft: 'bg-white/10 text-[#94a3b8]',
+  sent: 'bg-blue-500/20 text-blue-400',
+  opened: 'bg-amber-500/20 text-amber-400',
+  signed: 'bg-emerald-500/20 text-emerald-400',
 };
 
 function formatCurrency(value: number) {
@@ -213,7 +213,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-sand-200">Laddar offerter…</p>
+        <p className="text-[#94a3b8]">Laddar offerter…</p>
       </div>
     );
   }
@@ -224,68 +224,68 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
         >
           + Skapa ny offert
         </button>
       </div>
 
       {quotes.length === 0 ? (
-        <div className="rounded-xl border border-sand-200 bg-white p-20 text-center shadow-sm">
-          <p className="text-lg text-sand-200">Inga offerter ännu. Skapa din första offert ovan.</p>
+        <div className="glass-card rounded-xl p-20 text-center">
+          <p className="text-lg text-[#94a3b8]">Inga offerter ännu. Skapa din första offert ovan.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-sand-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-sand-200">
+        <div className="glass-card overflow-hidden rounded-xl">
+          <table className="min-w-full">
             <thead>
               <tr>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   ID
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Datum
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Kund
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Belopp
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Status
                 </th>
-                <th className="px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Åtgärd
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sand-200">
+            <tbody>
               {quotes.map((q) => {
                 const customer = q.customers;
                 const customerName = customer?.name ?? '—';
                 return (
-                  <tr key={q.id} className="transition-colors hover:bg-sand-50">
-                    <td className="whitespace-nowrap px-6 py-5 font-mono text-sm text-brand-900">
+                  <tr key={q.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
+                    <td className="whitespace-nowrap px-6 py-5 font-mono text-sm text-white">
                       #{q.id.slice(0, 8)}
                     </td>
-                    <td className="px-6 py-5 text-sm text-sand-200">{formatDate(q.created_at)}</td>
-                    <td className="px-6 py-5 font-medium text-brand-900">{customerName}</td>
-                    <td className="px-6 py-5 text-sand-200">
+                    <td className="px-6 py-5 text-sm text-[#94a3b8]">{formatDate(q.created_at)}</td>
+                    <td className="px-6 py-5 font-medium text-white">{customerName}</td>
+                    <td className="px-6 py-5 text-[#94a3b8]">
                       {formatCurrency(q.total_amount ?? 0)}
                     </td>
                     <td className="px-6 py-5">
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[q.status] ?? 'bg-gray-100 text-gray-700'}`}
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[q.status] ?? 'bg-white/10 text-[#94a3b8]'}`}
                       >
                         {STATUS_LABELS[q.status] ?? q.status}
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-5 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-3">
                         <a
                           href={`/api/quotes/${q.id}/pdf`}
                           download={`offert-${q.id.slice(0, 8)}.pdf`}
-                          className="text-sm text-brand-600 hover:text-brand-900"
+                          className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
                         >
                           Ladda ner PDF
                         </a>
@@ -293,7 +293,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                           <button
                             type="button"
                             onClick={() => markAsSent(q.id)}
-                            className="text-sm text-brand-600 hover:text-brand-900"
+                            className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
                           >
                             Markera som skickad
                           </button>
@@ -303,7 +303,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                             type="button"
                             onClick={() => sendQuoteEmail(q)}
                             disabled={sendingEmailId === q.id}
-                            className="text-sm text-brand-600 hover:text-brand-900 disabled:opacity-50"
+                            className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400 disabled:opacity-50"
                           >
                             {sendingEmailId === q.id ? 'Skickar…' : 'Skicka via mail'}
                           </button>
@@ -312,7 +312,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                           <button
                             type="button"
                             onClick={() => markAsSigned(q)}
-                            className="text-sm text-green-600 hover:text-green-800"
+                            className="text-sm text-emerald-400 transition-colors duration-150 hover:text-emerald-300"
                           >
                             Markera som signerad
                           </button>
@@ -328,20 +328,20 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
       )}
 
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Ny offert</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Ny offert</h3>
             <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-900">Kund *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
                       {c.name}
                     </option>
                   ))}
@@ -350,11 +350,11 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-brand-900">Tjänster</label>
+                  <label className="block text-sm font-medium text-[#94a3b8]">Tjänster</label>
                   <button
                     type="button"
                     onClick={addService}
-                    className="text-sm text-brand-600 hover:text-brand-900"
+                    className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
                   >
                     + Lägg till
                   </button>
@@ -367,7 +367,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                         placeholder="Tjänst (t.ex. Hemsida)"
                         value={s.name}
                         onChange={(e) => updateService(i, 'name', e.target.value)}
-                        className="flex-1 rounded-lg border border-sand-200 px-3 py-2"
+                        className="flex-1 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                       />
                       <input
                         type="number"
@@ -378,12 +378,12 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                         onChange={(e) =>
                           updateService(i, 'price', parseFloat(e.target.value) || 0)
                         }
-                        className="w-28 rounded-lg border border-sand-200 px-3 py-2"
+                        className="w-28 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                       />
                       <button
                         type="button"
                         onClick={() => removeService(i)}
-                        className="rounded-lg border border-sand-200 px-2 text-sand-200 hover:bg-sand-100"
+                        className="rounded-lg border border-white/20 px-2 text-[#94a3b8] transition-all duration-150 hover:bg-white/5"
                       >
                         ×
                       </button>
@@ -392,9 +392,9 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-sand-50 p-4">
-                <p className="text-sm text-brand-600">Totalsumma</p>
-                <p className="font-serif text-xl font-semibold text-brand-900">
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <p className="text-sm text-[#94a3b8]">Totalsumma</p>
+                <p className="font-heading text-xl font-semibold text-white">
                   {formatCurrency(totalAmount)}
                 </p>
               </div>
@@ -403,14 +403,14 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(false)}
-                  className="rounded-lg border border-sand-200 px-4 py-2 text-sm"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {submitting ? 'Skapar…' : 'Skapa offert'}
                 </button>

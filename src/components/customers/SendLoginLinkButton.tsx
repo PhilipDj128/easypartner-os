@@ -38,7 +38,7 @@ export function SendLoginLinkButton({ email, customerName }: SendLoginLinkButton
 
   if (sent) {
     return (
-      <span className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800">
+      <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-400">
         Inloggningslänk skickad till {email}
       </span>
     );
@@ -50,11 +50,11 @@ export function SendLoginLinkButton({ email, customerName }: SendLoginLinkButton
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="rounded-lg border border-brand-500 px-4 py-2 text-sm text-brand-600 hover:bg-brand-50 disabled:opacity-60"
+        className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-60"
       >
         {loading ? 'Skickar...' : 'Skicka inloggningslänk'}
       </button>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rose-400">{error}</p>}
     </div>
   );
 }

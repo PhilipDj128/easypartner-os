@@ -41,9 +41,9 @@ function getRenewalStatus(renewalDate: string | null): 'green' | 'yellow' | 'red
 }
 
 const STATUS_STYLES = {
-  green: 'bg-green-100 text-green-800',
-  yellow: 'bg-amber-100 text-amber-800',
-  red: 'bg-red-100 text-red-800',
+  green: 'bg-emerald-500/20 text-emerald-400',
+  yellow: 'bg-amber-500/20 text-amber-400',
+  red: 'bg-rose-500/20 text-rose-400',
 };
 
 const STATUS_LABELS = {
@@ -116,7 +116,7 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-sand-200">Laddar domäner…</p>
+        <p className="text-[#94a3b8]">Laddar domäner…</p>
       </div>
     );
   }
@@ -127,63 +127,63 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
         >
           + Lägg till domän
         </button>
       </div>
 
       {domains.length === 0 ? (
-        <div className="rounded-xl border border-sand-200 bg-white p-20 text-center shadow-sm">
-          <p className="text-lg text-sand-200">Inga domäner ännu. Lägg till din första domän ovan.</p>
+        <div className="glass-card rounded-xl p-20 text-center">
+          <p className="text-lg text-[#94a3b8]">Inga domäner ännu. Lägg till din första domän ovan.</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-sand-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-sand-200">
+        <div className="glass-card overflow-hidden rounded-xl">
+          <table className="min-w-full">
             <thead>
               <tr>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Kund
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Domän
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Webbhotell
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Förnyelsedatum
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Byggd av oss
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Status
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
                   Säljmöjlighet
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-sand-200">
+            <tbody>
               {domains.map((d) => {
                 const renewalStatus = getRenewalStatus(d.renewal_date);
                 const isSalesOpp = !d.built_by_us;
                 return (
-                  <tr key={d.id} className="transition-colors hover:bg-sand-50">
-                    <td className="px-6 py-5 font-medium text-brand-900">
+                  <tr key={d.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
+                    <td className="px-6 py-5 font-medium text-white">
                       {d.customers?.name ?? '—'}
                     </td>
-                    <td className="px-6 py-5 text-brand-900">{d.domain}</td>
-                    <td className="px-6 py-5 text-sand-200">
+                    <td className="px-6 py-5 text-white">{d.domain}</td>
+                    <td className="px-6 py-5 text-[#94a3b8]">
                       {d.hosting_provider || '—'}
                     </td>
-                    <td className="px-6 py-5 text-sand-200">
+                    <td className="px-6 py-5 text-[#94a3b8]">
                       {formatDate(d.renewal_date)}
                     </td>
                     <td className="px-6 py-5">
                       <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs ${d.built_by_us ? 'bg-green-100 text-green-800' : 'bg-sand-100 text-sand-700'}`}
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs ${d.built_by_us ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-[#94a3b8]'}`}
                       >
                         {d.built_by_us ? 'Ja' : 'Nej'}
                       </span>
@@ -198,13 +198,13 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
                     <td className="px-6 py-5">
                       {isSalesOpp ? (
                         <span
-                          className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-800"
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-400"
                           title="Säljmöjlighet – hemsidan byggd av annan leverantör"
                         >
                           🔶 Säljmöjlighet
                         </span>
                       ) : (
-                        <span className="text-sand-400">—</span>
+                        <span className="text-[#64748b]">—</span>
                       )}
                     </td>
                   </tr>
@@ -216,74 +216,74 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
       )}
 
       {addOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Ny domän</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Ny domän</h3>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-900">Kund *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Domän *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Domän *</label>
                 <input
                   type="text"
                   name="domain"
                   required
                   placeholder="t.ex. example.se"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Webbhotell</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Webbhotell</label>
                 <input
                   type="text"
                   name="hosting_provider"
                   placeholder="t.ex. Loopia, One.com"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Förnyelsedatum</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Förnyelsedatum</label>
                 <input
                   type="date"
                   name="renewal_date"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6] [color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Byggd av oss</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Byggd av oss</label>
                 <select
                   name="built_by_us"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
-                  <option value="false">Nej</option>
-                  <option value="true">Ja</option>
+                  <option value="false" className="bg-[#111827] text-white">Nej</option>
+                  <option value="true" className="bg-[#111827] text-white">Ja</option>
                 </select>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
                   onClick={() => setAddOpen(false)}
-                  className="rounded-lg border border-sand-200 px-4 py-2 text-sm"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>

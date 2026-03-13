@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ScoreCircle } from './ScoreCircle';
 
 interface CompanyInfo {
   org_number?: string | null;
@@ -11,6 +12,7 @@ interface CompanyInfo {
   board_members?: string[];
   companies_owned?: number | null;
   subscriptions?: number | null;
+  active?: boolean;
 }
 
 interface AgencyReputation {
@@ -81,15 +83,15 @@ const ISSUE_LABELS: Record<string, string> = {
 };
 
 function getScoreColor(score: number): string {
-  if (score >= 70) return 'bg-red-100 text-red-800';
-  if (score >= 40) return 'bg-amber-100 text-amber-800';
-  return 'bg-gray-100 text-gray-600';
+  if (score >= 70) return 'bg-rose-500/20 text-rose-400';
+  if (score >= 40) return 'bg-amber-500/20 text-amber-400';
+  return 'bg-white/10 text-[#94a3b8]';
 }
 
 function getPriorityStar(score: number): { icon: string; title: string; color: string } {
-  if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-red-600' };
-  if (score >= 40) return { icon: '★', title: 'Prioritet: Medel', color: 'text-amber-500' };
-  return { icon: '☆', title: 'Prioritet: Låg', color: 'text-gray-400' };
+  if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-rose-400' };
+  if (score >= 40) return { icon: '★', title: 'Prioritet: Medel', color: 'text-amber-400' };
+  return { icon: '☆', title: 'Prioritet: Låg', color: 'text-[#94a3b8]' };
 }
 
 function formatPhone(phone: string): string {
@@ -239,34 +241,34 @@ export function ProspekteringDashboard() {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSearch} className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-        <h3 className="font-serif text-lg font-semibold text-brand-900">Sök leads</h3>
+      <form onSubmit={handleSearch} className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+        <h3 className="font-heading text-lg font-semibold text-white">Sök leads</h3>
         <div className="mt-4 flex flex-wrap gap-4">
           <div>
-            <label className="block text-sm font-medium text-brand-600">Bransch</label>
+            <label className="block text-sm font-medium text-[#94a3b8]">Bransch</label>
             <input
               type="text"
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               placeholder="t.ex. städfirma"
-              className="mt-1 w-48 rounded-lg border border-sand-200 px-3 py-2"
+              className="mt-1 w-48 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-600">Stad</label>
+            <label className="block text-sm font-medium text-[#94a3b8]">Stad</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="t.ex. Västerås"
-              className="mt-1 w-48 rounded-lg border border-sand-200 px-3 py-2"
+              className="mt-1 w-48 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
             />
           </div>
           <div className="flex items-end gap-4">
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600 disabled:opacity-50"
+              className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
             >
               {loading ? 'Analyserar…' : 'Starta prospektering'}
             </button>
@@ -292,20 +294,20 @@ export function ProspekteringDashboard() {
                   setMonitoringRunning(false);
                 }
               }}
-              className="rounded-lg border border-sand-300 bg-white px-4 py-2.5 text-sm font-medium text-sand-700 hover:bg-sand-50 disabled:opacity-50"
+              className="rounded-lg border border-white/20 px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
             >
               {monitoringRunning ? 'Kör bevakning…' : 'Starta bevakning'}
             </button>
           </div>
           {loading && (
             <div className="mt-4 w-full">
-              <div className="flex items-center justify-between gap-2 text-sm text-brand-600">
+              <div className="flex items-center justify-between gap-2 text-sm text-[#94a3b8]">
                 <span>{loadingMessage}</span>
                 <span>{progress}%</span>
               </div>
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-sand-100">
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-brand-500 transition-all duration-300"
+                  className="h-full rounded-full bg-[#3b82f6] transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -317,13 +319,13 @@ export function ProspekteringDashboard() {
       {leads.length > 0 && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="font-serif text-lg font-semibold text-brand-900">Resultat</h3>
-            <label className="flex items-center gap-2 text-sm">
+            <h3 className="font-heading text-lg font-semibold text-white">Resultat</h3>
+            <label className="flex items-center gap-2 text-sm text-[#94a3b8]">
               <input
                 type="checkbox"
                 checked={filterHighScore}
                 onChange={(e) => setFilterHighScore(e.target.checked)}
-                className="rounded border-sand-200"
+                className="rounded border-white/20 bg-white/5"
               />
               Visa endast leads med score 70+
             </label>
@@ -334,78 +336,79 @@ export function ProspekteringDashboard() {
               return (
               <div
                 key={lead.id}
-                className={`rounded-xl border shadow-sm transition-shadow hover:shadow-md overflow-hidden ${
-                  lead.agency_reputation?.on_warning_list
-                    ? 'border-red-300 bg-red-50/30'
-                    : 'border-sand-200 bg-white'
+                className={`glass-card overflow-hidden rounded-xl transition-all duration-150 hover:border-white/[0.12] ${
+                  lead.agency_reputation?.on_warning_list ? 'border-rose-500/30' : ''
                 }`}
               >
                 {(lead.agency_reputation?.on_warning_list ||
                   (lead.agency_reputation?.trustpilot_rating != null && lead.agency_reputation.trustpilot_rating < 3)) && (
-                  <div className="bg-red-100 border-b border-red-200 px-4 py-2 text-sm font-medium text-red-800">
+                  <div className="border-b border-rose-500/20 bg-rose-500/10 px-4 py-2 text-sm font-medium text-rose-400">
                     ⚠️ Varning: Byrån har dåliga recensioner
                   </div>
                 )}
                 {lead.agency_reputation?.agency_defunct && (
-                  <div className="bg-amber-100 border-b border-amber-200 px-4 py-2 text-sm font-medium text-amber-800">
+                  <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-400">
                     Byrån är nedlagd — kunden har ingen support
                   </div>
                 )}
                 {lead.agency_reputation?.hot_lead && (
-                  <div className="bg-amber-100 border-b border-amber-200 px-4 py-2.5 text-sm font-semibold text-amber-900">
+                  <div className="border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-400">
                     🔥 Missnöjd med sin byrå — ring idag
                   </div>
                 )}
                 <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span title={priority.title} className={`text-lg ${priority.color}`}>
-                        {priority.icon}
-                      </span>
-                      <h4 className="font-medium text-brand-900 truncate">{lead.company_name}</h4>
+                    <div className="flex items-center gap-3">
+                      <ScoreCircle score={lead.score} size={44} />
+                      <div>
+                        <span title={priority.title} className={`text-sm ${priority.color}`}>
+                          {priority.icon}
+                        </span>
+                        <h4 className="font-medium text-white truncate">{lead.company_name}</h4>
+                      </div>
                     </div>
                     <a
                       href={lead.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 block truncate text-sm text-brand-600 hover:underline"
+                      className="mt-1 block truncate text-sm text-[#3b82f6] hover:underline"
                     >
                       {lead.website}
                     </a>
                     {(lead.contact_phone && (
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <a
                           href={`tel:${lead.contact_phone.replace(/\D/g, '').replace(/^0/, '+46')}`}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-200"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/30"
                         >
                           <span>📞</span>
                           {formatPhone(lead.contact_phone)}
                         </a>
                         <a
                           href={`tel:${lead.contact_phone.replace(/\D/g, '').replace(/^0/, '+46')}`}
-                          className="rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white hover:bg-emerald-600"
+                          className="rounded bg-emerald-500/30 px-2 py-1 text-xs font-medium text-emerald-400 hover:bg-emerald-500/40"
                         >
                           Ring nu
                         </a>
                         {lead.pts_operator && (
-                          <span className="text-xs text-sand-600">Operatör: {lead.pts_operator}</span>
+                          <span className="text-xs text-[#94a3b8]">Operatör: {lead.pts_operator}</span>
                         )}
                         {lead.pts_is_switchboard && lead.pts_switchboard_provider && (
-                          <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                          <span className="inline-flex rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
                             Växel: {lead.pts_switchboard_provider}
                           </span>
                         )}
                         {lead.pts_is_switchboard && lead.direct_phones && lead.direct_phones.length > 0 && (
-                          <span className="text-xs text-sand-600">
+                          <span className="text-xs text-[#94a3b8]">
                             Direktnummer: {lead.direct_phones.slice(0, 2).map(formatPhone).join(', ')}
                           </span>
                         )}
                       </div>
                     ))}
                     {(lead.name_rank || lead.industry_city_rank) && (
-                      <p className="mt-2 text-xs text-sand-600">
-                        <span className="font-medium">Google-ranking:</span>{' '}
+                      <p className="mt-2 text-xs text-[#94a3b8]">
+                        <span className="font-medium text-white/90">Google-ranking:</span>{' '}
                         {lead.name_rank && `#${lead.name_rank} för "${lead.company_name}"`}
                         {lead.name_rank && lead.industry_city_rank && ' • '}
                         {lead.industry_city_rank && lead.industry && lead.city && (
@@ -414,29 +417,29 @@ export function ProspekteringDashboard() {
                       </p>
                     )}
                     {lead.catalog_presence && lead.catalog_presence.length > 0 && (
-                      <p className="mt-1 text-xs text-sand-600">
-                        <span className="font-medium">Finns på:</span> {lead.catalog_presence.join(', ')}
+                      <p className="mt-1 text-xs text-[#94a3b8]">
+                        <span className="font-medium text-white/90">Finns på:</span> {lead.catalog_presence.join(', ')}
                       </p>
                     )}
                     {lead.hosted_at && (
-                      <p className="mt-1 text-xs text-sand-600">
-                        <span className="font-medium">Hostad på:</span>{' '}
-                        <span className="inline-flex rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-700">
+                      <p className="mt-1 text-xs text-[#94a3b8]">
+                        <span className="font-medium text-white/90">Hostad på:</span>{' '}
+                        <span className="inline-flex rounded bg-white/10 px-1.5 py-0.5 font-medium text-[#94a3b8]">
                           {lead.hosted_at}
                         </span>
                       </p>
                     )}
                     {lead.decision_makers && lead.decision_makers.length > 0 && (
-                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
-                        <p className="font-medium text-sand-800">Beslutsfattare</p>
+                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-white/90">Beslutsfattare</p>
                         <ul className="mt-1 space-y-1">
                           {lead.decision_makers.map((dm, i) => (
-                            <li key={i} className="text-sand-600">
+                            <li key={i} className="text-[#94a3b8]">
                               <a
                                 href={dm.linkedin_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-medium text-brand-600 hover:underline"
+                                className="font-medium text-[#3b82f6] hover:underline"
                               >
                                 {dm.name}
                               </a>
@@ -448,20 +451,15 @@ export function ProspekteringDashboard() {
                       </div>
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-0.5 text-sm font-medium ${getScoreColor(lead.score)}`}
-                      >
-                        Score: {lead.score}
-                      </span>
                       {getIssueBadges(lead).map((key) => (
                         <span
                           key={key}
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                            key === 'agency_warned' ? 'bg-red-100 text-red-800' :
-                            key === 'agency_defunct' ? 'bg-amber-100 text-amber-800' :
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            key === 'agency_warned' ? 'bg-rose-500/20 text-rose-400' :
+                            key === 'agency_defunct' ? 'bg-amber-500/20 text-amber-400' :
                             key === 'pts_switchboard' && lead.pts_switchboard_provider
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-sand-100 text-sand-700'
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-white/10 text-[#94a3b8]'
                           }`}
                         >
                           {key === 'built_by_other' && lead.built_by_agency
@@ -473,8 +471,8 @@ export function ProspekteringDashboard() {
                       ))}
                     </div>
                     {((lead.pays_catalog || lead.buys_leads || lead.runs_ads) && (
-                      <p className="mt-2 text-xs text-sand-600">
-                        <span className="font-medium">Spenderar pengar på:</span>{' '}
+                      <p className="mt-2 text-xs text-[#94a3b8]">
+                        <span className="font-medium text-white/90">Spenderar pengar på:</span>{' '}
                         {[
                           lead.pays_catalog && 'katalog',
                           lead.buys_leads && 'leads',
@@ -485,13 +483,13 @@ export function ProspekteringDashboard() {
                       </p>
                     ))}
                     {(lead.agency_reputation || lead.built_by_agency) && (
-                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
-                        <p className="font-medium text-sand-800">Byråanalys</p>
-                        <p className="mt-1 text-sand-600">
-                          <span className="font-medium">Byrå:</span> {lead.built_by_agency || '—'}
+                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-white/90">Byråanalys</p>
+                        <p className="mt-1 text-[#94a3b8]">
+                          <span className="font-medium text-white/80">Byrå:</span> {lead.built_by_agency || '—'}
                         </p>
                         {lead.agency_reputation?.trustpilot_rating != null && (
-                          <p className="mt-0.5 text-sand-600">
+                          <p className="mt-0.5 text-[#94a3b8]">
                             Trustpilot: {lead.agency_reputation.trustpilot_rating.toFixed(1)}/5
                             {' ★'.repeat(Math.round(lead.agency_reputation.trustpilot_rating))}
                             {' ☆'.repeat(5 - Math.round(lead.agency_reputation.trustpilot_rating))}
@@ -502,39 +500,39 @@ export function ProspekteringDashboard() {
                             href={lead.agency_reputation.trustpilot_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-1 inline-block text-brand-600 hover:underline"
+                            className="mt-1 inline-block text-[#3b82f6] hover:underline"
                           >
                             Se Trustpilot →
                           </a>
                         )}
                         {lead.agency_reputation?.google_reviews_count != null && (
-                          <p className="mt-0.5 text-sand-600">
+                          <p className="mt-0.5 text-[#94a3b8]">
                             Google: {lead.agency_reputation.google_reviews_count} recensioner
                             {lead.agency_reputation?.google_rating_avg != null &&
                               ` • ${lead.agency_reputation.google_rating_avg.toFixed(1)}/5`}
                           </p>
                         )}
                         {lead.agency_reputation?.on_warning_list && (
-                          <p className="mt-0.5 font-medium text-red-700">⚠️ Finns på varningslistan</p>
+                          <p className="mt-0.5 font-medium text-rose-400">⚠️ Finns på varningslistan</p>
                         )}
                         {lead.agency_reputation?.agency_defunct && (
-                          <p className="mt-0.5 font-medium text-amber-700">Byrån är nedlagd</p>
+                          <p className="mt-0.5 font-medium text-amber-400">Byrån är nedlagd</p>
                         )}
                         {lead.agency_reputation && !lead.agency_reputation.agency_defunct && lead.built_by_agency && (
-                          <p className="mt-0.5 text-sand-500">Byrån är aktiv</p>
+                          <p className="mt-0.5 text-[#94a3b8]">Byrån är aktiv</p>
                         )}
                       </div>
                     )}
                     {lead.extra_domains && lead.extra_domains.length > 0 && (
-                      <p className="mt-1 text-xs text-sand-600">
-                        <span className="font-medium">Fler domäner:</span>{' '}
+                      <p className="mt-1 text-xs text-[#94a3b8]">
+                        <span className="font-medium text-white/90">Fler domäner:</span>{' '}
                         {lead.extra_domains.map((d, i) => (
                           <a
                             key={d}
                             href={`https://${d}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand-600 hover:underline"
+                            className="text-[#3b82f6] hover:underline"
                           >
                             {d}
                             {i < lead.extra_domains!.length - 1 ? ', ' : ''}
@@ -543,9 +541,9 @@ export function ProspekteringDashboard() {
                       </p>
                     )}
                     {lead.company_info && Object.keys(lead.company_info).length > 0 && (
-                      <div className="mt-2 rounded-lg border border-sand-100 bg-sand-50 p-2 text-xs">
-                        <p className="font-medium text-sand-800">Företagsinfo</p>
-                        <ul className="mt-1 space-y-0.5 text-sand-600">
+                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-white/90">Företagsinfo</p>
+                        <ul className="mt-1 space-y-0.5 text-[#94a3b8]">
                           {lead.company_info.org_number && (
                             <li>Org.nr: {lead.company_info.org_number}</li>
                           )}
@@ -567,11 +565,20 @@ export function ProspekteringDashboard() {
                           {lead.company_info.subscriptions != null && (
                             <li>Abonnemang: {lead.company_info.subscriptions}</li>
                           )}
+                          {lead.company_info.active !== undefined && (
+                            <li>
+                              Status: {lead.company_info.active ? (
+                                <span className="text-emerald-400">Aktivt</span>
+                              ) : (
+                                <span className="text-amber-400">Ej aktivt</span>
+                              )}
+                            </li>
+                          )}
                         </ul>
                       </div>
                     )}
                     {lead.sales_pitch && (
-                      <p className="mt-2 text-sm italic text-sand-800 line-clamp-2" title={lead.sales_pitch}>
+                      <p className="mt-2 text-sm italic text-[#94a3b8] line-clamp-2" title={lead.sales_pitch}>
                         {lead.sales_pitch}
                       </p>
                     )}
@@ -581,7 +588,7 @@ export function ProspekteringDashboard() {
                       type="button"
                       onClick={() => handleAddToCrm(lead)}
                       disabled={addingId === lead.id}
-                      className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                      className="btn-primary rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                     >
                       {addingId === lead.id ? 'Lägger till…' : 'Lägg till i CRM'}
                     </button>
@@ -616,7 +623,7 @@ export function ProspekteringDashboard() {
                         }
                       }}
                       disabled={healthCheckId === lead.id}
-                      className="rounded-lg border border-sand-300 bg-white px-3 py-1.5 text-xs font-medium text-sand-700 hover:bg-sand-50 disabled:opacity-50"
+                      className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
                     >
                       {healthCheckId === lead.id ? 'Genererar…' : 'Generera hälsokoll'}
                     </button>
@@ -628,14 +635,14 @@ export function ProspekteringDashboard() {
             })}
           </div>
           {filterHighScore && displayedLeads.length === 0 && (
-            <p className="text-center text-sm text-sand-200">Inga leads med score 70+</p>
+            <p className="text-center text-sm text-[#94a3b8]">Inga leads med score 70+</p>
           )}
         </div>
       )}
 
       {!loading && leads.length === 0 && (
-        <div className="rounded-xl border border-sand-200 bg-white p-12 text-center shadow-sm">
-          <p className="text-sand-200">
+        <div className="glass-card rounded-xl p-12 text-center">
+          <p className="text-[#94a3b8]">
             Ange bransch och stad, klicka på &quot;Starta prospektering&quot; för att söka leads.
           </p>
         </div>

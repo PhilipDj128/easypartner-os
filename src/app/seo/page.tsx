@@ -14,9 +14,9 @@ export default async function SEOPage() {
   }
 
   return (
-    <div className="min-h-screen bg-sand-50 px-8 py-16">
+    <div className="min-h-screen px-6 py-10 lg:px-10 lg:py-12 animate-fade-in">
       <div className="mx-auto max-w-6xl">
-        <h1 className="mb-12 font-serif text-3xl font-semibold text-brand-900">
+        <h1 className="mb-10 font-heading text-3xl font-semibold text-white">
           SEO-dashboard
         </h1>
         <SEODashboard customers={customers} domains={domains} />

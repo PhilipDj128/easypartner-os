@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { format, differenceInDays, parseISO } from 'date-fns';
-import { sv } from 'date-fns/locale';
+import { differenceInDays, parseISO } from 'date-fns';
 import type { Customer } from '@/types/database';
 
 interface CustomerTableProps {
@@ -63,72 +62,72 @@ function getCustomerFlags(customer: Customer) {
 export function CustomerTable({ customers }: CustomerTableProps) {
   if (customers.length === 0) {
     return (
-      <div className="rounded-xl border border-sand-200 bg-white p-20 text-center shadow-sm">
-        <p className="text-lg text-sand-200">Inga kunder ännu. Lägg till din första kund ovan.</p>
+      <div className="glass-card rounded-xl p-20 text-center">
+        <p className="text-lg text-[#94a3b8]">Inga kunder ännu. Lägg till din första kund ovan.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-sand-200 bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-sand-200">
+    <div className="glass-card overflow-hidden rounded-xl">
+      <table className="min-w-full">
         <thead>
-          <tr>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+          <tr className="border-b border-white/[0.08]">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Namn
             </th>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Företag
             </th>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Avtalsvärde
             </th>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Tjänster
             </th>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Status
             </th>
-            <th className="px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Flaggor
             </th>
-            <th className="px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-brand-600">
+            <th className="px-6 py-4 text-right text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
               Åtgärd
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-sand-200">
+        <tbody>
           {customers.map((customer) => {
             const flags = getCustomerFlags(customer);
             return (
-              <tr key={customer.id} className="transition-colors hover:bg-sand-50">
-                <td className="whitespace-nowrap px-6 py-5">
+              <tr key={customer.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
+                <td className="whitespace-nowrap px-6 py-4">
                   <Link
                     href={`/customers/${customer.id}`}
-                    className="font-medium text-brand-900 hover:text-brand-600"
+                    className="font-medium text-white transition-colors hover:text-[#3b82f6]"
                   >
                     {customer.name}
                   </Link>
                 </td>
-                <td className="px-6 py-5 text-sand-200">{customer.company || '—'}</td>
-                <td className="px-6 py-5 text-sand-200">
+                <td className="px-6 py-4 text-[#94a3b8]">{customer.company || '—'}</td>
+                <td className="px-6 py-4 text-[#94a3b8]">
                   {formatCurrency(customer.contract_value)}
                 </td>
-                <td className="max-w-[140px] truncate px-6 py-5 text-sm text-sand-200">
+                <td className="max-w-[140px] truncate px-6 py-4 text-sm text-[#94a3b8]">
                   {customer.services?.join(', ') || '—'}
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-4">
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       customer.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-sand-100 text-sand-700'
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : 'bg-white/10 text-[#94a3b8]'
                     }`}
                   >
                     {customer.status}
                   </span>
                 </td>
-                <td className="px-6 py-5">
+                <td className="px-6 py-4">
                   <div className="flex gap-1.5">
                     {flags.map((flag, i) => (
                       <span
@@ -136,10 +135,10 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                         title={flag.label}
                         className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
                           flag.type === 'red'
-                            ? 'bg-red-500 text-white'
+                            ? 'bg-rose-500/30 text-rose-400'
                             : flag.type === 'yellow'
-                              ? 'bg-amber-400 text-amber-900'
-                              : 'bg-green-500 text-white'
+                              ? 'bg-amber-500/30 text-amber-400'
+                              : 'bg-emerald-500/30 text-emerald-400'
                         }`}
                       >
                         {flag.type === 'red' ? '!' : flag.type === 'yellow' ? '⚠' : '🎂'}
@@ -147,10 +146,10 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                     ))}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-5 text-right">
+                <td className="whitespace-nowrap px-6 py-4 text-right">
                   <Link
                     href={`/customers/${customer.id}`}
-                    className="text-sm text-brand-600 hover:text-brand-900"
+                    className="text-sm text-[#3b82f6] transition-colors hover:text-[#60a5fa]"
                   >
                     Visa →
                   </Link>

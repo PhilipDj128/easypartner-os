@@ -85,20 +85,124 @@ const KNOWN_AGENCIES = [
   'Lowe Brindfors',
 ];
 
-/** Generiska fraser + extraktion av byrånamn: built by, created by, powered by, design by, av */
-const BUILT_BY_PATTERNS = [
-  /byggd\s+av\s+([^<"'\n]+)/i,
-  /created\s+by\s+([^<"'\n]+)/i,
-  /powered\s+by\s+([^<"'\n]+)/i,
-  /developed\s+by\s+([^<"'\n]+)/i,
-  /web\s+by\s+([^<"'\n]+)/i,
-  /design\s+by\s+([^<"'\n]+)/i,
-  /designad\s+av\s+([^<"'\n]+)/i,
-  /skapad\s+av\s+([^<"'\n]+)/i,
-  /utvecklad\s+av\s+([^<"'\n]+)/i,
-  /made\s+by\s+([^<"'\n]+)/i,
-  /\bav\s+([A-ZÅÄÖa-zåäö][A-Za-zåäö0-9&\s\-]+?)(?:\s*[|–\-]|\s*$|<)/i,
+/** Nyckelord som måste finnas inom 50 tecken från byrånamnet */
+const AGENCY_KEYWORDS = [
+  'skapad av',
+  'byggd av',
+  'designed by',
+  'developed by',
+  'created by',
+  'powered by',
+  'web by',
+  'design by',
+  'designad av',
+  'utvecklad av',
+  'made by',
 ];
+
+/** "by" endast som del av längre fras för att undvika falska träffar */
+const AGENCY_KEYWORD_BY = /\b(?:site|web|page)\s+by\b/i;
+
+const MAX_DISTANCE_CHARS = 50;
+
+/** Byrå → vanliga domändelar för länk-matchning */
+const AGENCY_DOMAINS: Record<string, string[]> = {
+  Rio: ['rio.se', 'rioweb.se'],
+  Zooma: ['zooma.nu', 'zooma.se'],
+  Netset: ['netset.se'],
+  'Effective Media': ['effectivemedia.se', 'effectivemedia.com'],
+  Webbhotell24: ['webbhotell24.se'],
+  Loopia: ['loopia.se'],
+  'One.com': ['one.com'],
+};
+
+function getSearchZones(html: string): { text: string; raw: string }[] {
+  const zones: { text: string; raw: string }[] = [];
+
+  const footerMatch = html.match(/<footer[^>]*>([\s\S]*?)<\/footer>/i);
+  if (footerMatch) {
+    const raw = footerMatch[1];
+    zones.push({ raw, text: raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') });
+  }
+
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const body = bodyMatch ? bodyMatch[1] : html;
+  const last20Len = Math.floor(body.length * 0.2);
+  const last20 = body.slice(-last20Len);
+  if (last20.length > 0) {
+    zones.push({ raw: last20, text: last20.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') });
+  }
+
+  const linkMatches = html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi);
+  for (const m of linkMatches) {
+    const href = (m[1] ?? '').toLowerCase();
+    const inner = (m[2] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (inner.length > 1 && inner.length < 60 && /\.(se|com|nu|net|org)/i.test(href)) {
+      zones.push({ raw: `${href} ${inner}`, text: `${href} ${inner}` });
+    }
+  }
+
+  return zones;
+}
+
+function detectAgencyStrict(html: string, url: string): { agency: string; triggeredBy: string } | null {
+  const zones = getSearchZones(html);
+  const allKeywords = [...AGENCY_KEYWORDS];
+
+  for (const zone of zones) {
+    const searchText = zone.text;
+
+    for (const kw of allKeywords) {
+      const kwRe = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      let m: RegExpExecArray | null;
+      while ((m = kwRe.exec(searchText)) !== null) {
+        const start = m.index;
+        const window = searchText.slice(start, start + kw.length + MAX_DISTANCE_CHARS);
+
+        for (const agency of KNOWN_AGENCIES) {
+          const agencyRe = new RegExp('\\b' + agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+          if (agencyRe.test(window)) {
+            return {
+              agency,
+              triggeredBy: window.slice(0, 100).trim(),
+            };
+          }
+        }
+      }
+    }
+
+    if (AGENCY_KEYWORD_BY.test(searchText)) {
+      const byMatch = searchText.match(AGENCY_KEYWORD_BY);
+      if (byMatch) {
+        const idx = searchText.indexOf(byMatch[0]);
+        const window = searchText.slice(idx, idx + byMatch[0].length + MAX_DISTANCE_CHARS);
+        for (const agency of KNOWN_AGENCIES) {
+          const agencyRe = new RegExp('\\b' + agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+          if (agencyRe.test(window)) {
+            return { agency, triggeredBy: window.slice(0, 100).trim() };
+          }
+        }
+      }
+    }
+  }
+
+  for (const zone of zones) {
+    const hrefMatch = zone.raw.match(/https?:\/\/([^/"'\s]+)/i);
+    if (hrefMatch) {
+      const domain = hrefMatch[1].toLowerCase().replace(/^www\./, '');
+      for (const [agency, domains] of Object.entries(AGENCY_DOMAINS)) {
+        if (domains.some((d) => domain.includes(d))) {
+          const agencyInZone = new RegExp('\\b' + agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+          if (agencyInZone.test(zone.text)) {
+            return { agency, triggeredBy: `Länk till ${domain}` };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
 
 /** Google Ads: gtag, googletag, adsbygoogle */
 const GOOGLE_ADS_PATTERNS = [
@@ -155,30 +259,18 @@ export async function analyzeWebsite(url: string): Promise<SiteAnalysis> {
 
   result.slow_site = result.load_time_ms > 2000;
 
-  /** Först: sök efter kända byrånamn */
-  for (const agency of KNOWN_AGENCIES) {
-    const re = new RegExp(agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    if (re.test(html)) {
-      result.built_by_other = true;
-      result.built_by_agency = agency;
-      result.built_by_text = agency;
-      break;
-    }
-  }
-
-  /** Om ingen känd byrå: sök generiska fraser */
-  if (!result.built_by_agency) {
-    for (const pattern of BUILT_BY_PATTERNS) {
-      const m = html.match(pattern);
-      if (m) {
-        const text = m[1].trim().replace(/<[^>]+>/g, '').slice(0, 80);
-        if (text && !/wix|wordpress|squarespace|webflow|shopify|google|microsoft/i.test(text)) {
-          result.built_by_other = true;
-          result.built_by_agency = text;
-          result.built_by_text = text;
-          break;
-        }
-      }
+  /** Strikt byråigenkänning: endast i footer/last 20% body, inom 50 tecken från nyckelord */
+  const agencyMatch = detectAgencyStrict(html, url);
+  if (agencyMatch) {
+    result.built_by_other = true;
+    result.built_by_agency = agencyMatch.agency;
+    result.built_by_text = agencyMatch.agency;
+    if (process.env.DEBUG_AGENCY === '1') {
+      console.log('[prospect-analyzer] Byrå matchad:', {
+        agency: agencyMatch.agency,
+        triggeredBy: agencyMatch.triggeredBy,
+        url,
+      });
     }
   }
 

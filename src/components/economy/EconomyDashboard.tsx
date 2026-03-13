@@ -153,7 +153,7 @@ export function EconomyDashboard({ customers }: { customers: Customer[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-sand-200">Laddar ekonomi…</p>
+        <p className="text-[#94a3b8]">Laddar ekonomi…</p>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export function EconomyDashboard({ customers }: { customers: Customer[] }) {
   if (!data) {
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-800">
+        <div className="glass-card rounded-xl border-rose-500/30 p-6 text-rose-400">
           <p className="font-semibold">Kunde inte ladda ekonomidatan</p>
           <p className="mt-2 text-sm">{fetchError}</p>
           <p className="mt-4 text-sm">
@@ -212,7 +212,7 @@ create table expenses (
     <div className="space-y-10">
       {/* Varning */}
       {showWarning && (
-        <div className="rounded-xl border-2 border-red-300 bg-red-50 p-5 text-red-800">
+        <div className="glass-card rounded-xl border-2 border-rose-500/40 bg-rose-500/10 p-5 text-rose-400">
           <p className="font-semibold">Varning: Utgifterna överstiger 60% av intäkterna</p>
           <p className="mt-1 text-sm">
             Utgiftsandelen är {expenseRatio.toFixed(1)}% denna månad. Överväg att öka intäkterna
@@ -223,29 +223,29 @@ create table expenses (
 
       {/* KPI-kort */}
       <div className="grid gap-6 sm:grid-cols-3">
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
             Omsättning (denna månad)
           </p>
-          <p className="mt-2 font-serif text-2xl font-semibold text-brand-900">
+          <p className="mt-2 font-heading text-2xl font-semibold text-white">
             {formatCurrency(data.thisMonthRevenue)}
           </p>
         </div>
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
             Utgifter (denna månad)
           </p>
-          <p className="mt-2 font-serif text-2xl font-semibold text-brand-900">
+          <p className="mt-2 font-heading text-2xl font-semibold text-white">
             {formatCurrency(data.thisMonthExpenses)}
           </p>
         </div>
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-medium uppercase tracking-wider text-brand-600">
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
             Marginal
           </p>
           <p
-            className={`mt-2 font-serif text-2xl font-semibold ${
-              data.margin >= 0 ? 'text-brand-900' : 'text-red-600'
+            className={`mt-2 font-heading text-2xl font-semibold ${
+              data.margin >= 0 ? 'text-white' : 'text-rose-400'
             }`}
           >
             {data.margin.toFixed(1)}%
@@ -254,20 +254,23 @@ create table expenses (
       </div>
 
       {/* Grafen */}
-      <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-6 font-serif text-lg font-semibold text-brand-900">
+      <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+        <h3 className="mb-6 font-heading text-lg font-semibold text-white">
           Intäkter vs utgifter — senaste 12 månaderna
         </h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e8dfd0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#3a5a8a" />
-              <YAxis tick={{ fontSize: 11 }} stroke="#3a5a8a" tickFormatter={(v) => `${v / 1000}k`} />
-              <Tooltip formatter={(v: unknown) => formatCurrency(Number(v ?? 0))} />
-              <Legend />
-              <Bar dataKey="Intäkter" fill="#4a6fa5" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Utgifter" fill="#e8dfd0" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} stroke="#94a3b8" />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} stroke="#94a3b8" tickFormatter={(v) => `${v / 1000}k`} />
+              <Tooltip
+                formatter={(v: unknown) => formatCurrency(Number(v ?? 0))}
+                contentStyle={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+              />
+              <Legend wrapperStyle={{ color: '#94a3b8' }} />
+              <Bar dataKey="Intäkter" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Utgifter" fill="#64748b" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -278,14 +281,14 @@ create table expenses (
         <button
           type="button"
           onClick={() => setRevenueOpen(true)}
-          className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
         >
           + Logga intäkt
         </button>
         <button
           type="button"
           onClick={() => setExpenseOpen(true)}
-          className="rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 transition-colors hover:bg-brand-50"
+          className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5"
         >
           + Logga utgift
         </button>
@@ -293,68 +296,68 @@ create table expenses (
 
       {/* Modal: Ny intäkt */}
       {revenueOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Ny intäkt</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Ny intäkt</h3>
             <form onSubmit={handleRevenueSubmit} className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-900">Kund</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Kund</label>
                 <select
                   name="customer_id"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
+                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Belopp (kr) *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Belopp (kr) *</label>
                 <input
                   type="number"
                   name="amount"
                   required
                   min="1"
                   step="1"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Tjänst</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Tjänst</label>
                 <input
                   type="text"
                   name="service"
                   placeholder="t.ex. Hemsida, SEO"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-brand-900">Månad</label>
+                  <label className="block text-sm font-medium text-[#94a3b8]">Månad</label>
                   <select
                     name="month"
                     defaultValue={currentMonth}
-                    className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                      <option key={m} value={m}>
+                      <option key={m} value={m} className="bg-[#111827] text-white">
                         {new Date(2000, m - 1).toLocaleString('sv', { month: 'long' })}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-brand-900">År</label>
+                  <label className="block text-sm font-medium text-[#94a3b8]">År</label>
                   <input
                     type="number"
                     name="year"
                     defaultValue={currentYear}
                     min="2020"
                     max="2030"
-                    className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                   />
                 </div>
               </div>
@@ -362,14 +365,14 @@ create table expenses (
                 <button
                   type="button"
                   onClick={() => setRevenueOpen(false)}
-                  className="rounded-lg border border-sand-200 px-4 py-2 text-sm"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>
@@ -381,75 +384,75 @@ create table expenses (
 
       {/* Modal: Ny utgift */}
       {expenseOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl text-brand-900">Ny utgift</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-white">Ny utgift</h3>
             <form onSubmit={handleExpenseSubmit} className="mt-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-brand-900">Kategori</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Kategori</label>
                 <select
                   name="category"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 >
                   <option value="">— Välj —</option>
                   {EXPENSE_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
+                    <option key={c} value={c} className="bg-[#111827] text-white">
                       {c}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Beskrivning</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Beskrivning</label>
                 <input
                   type="text"
                   name="description"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Belopp (kr) *</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Belopp (kr) *</label>
                 <input
                   type="number"
                   name="amount"
                   required
                   min="1"
                   step="1"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-brand-900">Leverantör</label>
+                <label className="block text-sm font-medium text-[#94a3b8]">Leverantör</label>
                 <input
                   type="text"
                   name="supplier"
-                  className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-brand-900">Månad</label>
+                  <label className="block text-sm font-medium text-[#94a3b8]">Månad</label>
                   <select
                     name="month"
                     defaultValue={currentMonth}
-                    className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                      <option key={m} value={m}>
+                      <option key={m} value={m} className="bg-[#111827] text-white">
                         {new Date(2000, m - 1).toLocaleString('sv', { month: 'long' })}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-brand-900">År</label>
+                  <label className="block text-sm font-medium text-[#94a3b8]">År</label>
                   <input
                     type="number"
                     name="year"
                     defaultValue={currentYear}
                     min="2020"
                     max="2030"
-                    className="mt-1 w-full rounded-lg border border-sand-200 px-3 py-2"
+                    className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                   />
                 </div>
               </div>
@@ -457,14 +460,14 @@ create table expenses (
                 <button
                   type="button"
                   onClick={() => setExpenseOpen(false)}
-                  className="rounded-lg border border-sand-200 px-4 py-2 text-sm"
+                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm text-white hover:bg-brand-600 disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>

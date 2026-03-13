@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ArrowTrendingUpIcon, ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 
 interface DashboardData {
   todos: { type: string; text: string; href: string }[];
@@ -42,35 +43,41 @@ export function DashboardClient() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <p className="text-sand-200">Laddar…</p>
+      <div className="flex justify-center py-24">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b82f6] border-t-transparent" />
       </div>
     );
   }
 
   const { todos = [], stats = {} as { activeCustomers?: number; thisMonthRevenue?: number; openQuotes?: number; newLeads?: number }, leads = [], reminders = [] } = data ?? {};
+  const kpis: { label: string; value: string | number; trend: 'up' | 'neutral' | 'down' }[] = [
+    { label: 'Aktiva kunder', value: stats.activeCustomers ?? 0, trend: 'up' },
+    { label: 'Omsättning denna månad', value: formatCurrency(stats.thisMonthRevenue ?? 0), trend: 'up' },
+    { label: 'Öppna offerter', value: stats.openQuotes ?? 0, trend: 'neutral' },
+    { label: 'Nya leads', value: stats.newLeads ?? 0, trend: 'up' },
+  ];
 
   return (
     <div className="space-y-10">
       <div>
-        <p className="text-sand-200">{formatDate(new Date().toISOString())}</p>
-        <h1 className="mt-1 font-serif text-3xl font-semibold text-brand-900">
+        <p className="text-sm text-[#94a3b8]">{formatDate(new Date().toISOString())}</p>
+        <h1 className="mt-1 font-heading text-3xl font-semibold text-white">
           Hej {userName}!
         </h1>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <h2 className="font-serif text-lg font-semibold text-brand-900">Att göra</h2>
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <h2 className="font-heading text-lg font-semibold text-white">Att göra</h2>
           {todos.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-200">Inget akut just nu.</p>
+            <p className="mt-4 text-sm text-[#94a3b8]">Inget akut just nu.</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {todos.slice(0, 8).map((t, i) => (
                 <li key={i}>
                   <Link
                     href={t.href}
-                    className="block rounded-lg border border-sand-100 p-3 text-sm text-brand-900 transition-colors hover:bg-sand-50"
+                    className="block rounded-lg border border-white/[0.06] p-4 text-sm text-white transition-all duration-150 hover:border-[#3b82f6]/30 hover:bg-[#3b82f6]/5"
                   >
                     {t.text}
                   </Link>
@@ -80,59 +87,64 @@ export function DashboardClient() {
           )}
         </div>
 
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <h2 className="font-serif text-lg font-semibold text-brand-900">Snabbstatistik</h2>
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <h2 className="font-heading text-lg font-semibold text-white">Snabbstatistik</h2>
           <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="rounded-lg bg-sand-50 p-4">
-              <p className="text-sm text-brand-600">Aktiva kunder</p>
-              <p className="font-serif text-2xl font-semibold text-brand-900">{stats.activeCustomers ?? 0}</p>
-            </div>
-            <div className="rounded-lg bg-sand-50 p-4">
-              <p className="text-sm text-brand-600">Omsättning denna månad</p>
-              <p className="font-serif text-2xl font-semibold text-brand-900">{formatCurrency(stats.thisMonthRevenue ?? 0)}</p>
-            </div>
-            <div className="rounded-lg bg-sand-50 p-4">
-              <p className="text-sm text-brand-600">Öppna offerter</p>
-              <p className="font-serif text-2xl font-semibold text-brand-900">{stats.openQuotes ?? 0}</p>
-            </div>
-            <div className="rounded-lg bg-sand-50 p-4">
-              <p className="text-sm text-brand-600">Nya leads</p>
-              <p className="font-serif text-2xl font-semibold text-brand-900">{stats.newLeads ?? 0}</p>
-            </div>
+            {kpis.map((kpi, i) => (
+              <div key={i} className="rounded-lg bg-white/[0.04] p-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-[#94a3b8]">{kpi.label}</p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className="font-heading text-2xl font-bold text-white">{kpi.value}</p>
+                  {kpi.trend === 'up' && (
+                    <ArrowTrendingUpIcon className="h-5 w-5 text-emerald-400" />
+                  )}
+                  {kpi.trend === 'down' && (
+                    <ArrowTrendingDownIcon className="h-5 w-5 text-rose-400" />
+                  )}
+                  {kpi.trend === 'neutral' && (
+                    <span className="h-5 w-5 text-[#64748b]">−</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg font-semibold text-brand-900">Senaste leads</h2>
-            <Link href="/prospektering" className="text-sm text-brand-600 hover:text-brand-900">Visa alla →</Link>
+            <h2 className="font-heading text-lg font-semibold text-white">Senaste leads</h2>
+            <Link href="/prospektering" className="text-sm text-[#3b82f6] transition-colors hover:text-[#60a5fa]">
+              Visa alla →
+            </Link>
           </div>
           {leads.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-200">Inga nya leads.</p>
+            <p className="mt-4 text-sm text-[#94a3b8]">Inga nya leads.</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {leads.map((l) => (
-                <li key={(l as { id: string }).id} className="flex justify-between rounded-lg border border-sand-100 p-3 text-sm">
-                  <span className="font-medium text-brand-900">{(l as { company_name?: string }).company_name ?? '—'}</span>
-                  <span className="text-sand-200">Score: {(l as { score?: number }).score ?? '—'}</span>
+                <li key={(l as { id: string }).id} className="flex items-center justify-between rounded-lg border border-white/[0.06] p-4 transition-all duration-150 hover:bg-[#3b82f6]/5">
+                  <span className="font-medium text-white">{(l as { company_name?: string }).company_name ?? '—'}</span>
+                  <span className="rounded-full bg-[#3b82f6]/20 px-2.5 py-0.5 text-xs font-medium text-[#3b82f6]">
+                    Score: {(l as { score?: number }).score ?? '—'}
+                  </span>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="rounded-xl border border-sand-200 bg-white p-6 shadow-sm">
-          <h2 className="font-serif text-lg font-semibold text-brand-900">Kommande påminnelser</h2>
+        <div className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
+          <h2 className="font-heading text-lg font-semibold text-white">Kommande påminnelser</h2>
           {reminders.length === 0 ? (
-            <p className="mt-4 text-sm text-sand-200">Inga påminnelser.</p>
+            <p className="mt-4 text-sm text-[#94a3b8]">Inga påminnelser.</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {reminders.map((r) => (
-                <li key={(r as { id: string }).id} className="rounded-lg border border-sand-100 p-3 text-sm">
-                  <p className="text-brand-900">{(r as { message?: string }).message ?? (r as { type?: string }).type ?? 'Påminnelse'}</p>
-                  <p className="mt-1 text-sand-200">
+                <li key={(r as { id: string }).id} className="rounded-lg border border-white/[0.06] p-4">
+                  <p className="text-white">{(r as { message?: string }).message ?? (r as { type?: string }).type ?? 'Påminnelse'}</p>
+                  <p className="mt-1 text-sm text-[#94a3b8]">
                     {(r as { due_date?: string }).due_date
                       ? formatDate((r as { due_date: string }).due_date)
                       : ''}
@@ -147,19 +159,19 @@ export function DashboardClient() {
       <div className="flex flex-wrap gap-4">
         <Link
           href="/customers"
-          className="inline-flex items-center rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600"
+          className="btn-primary inline-flex items-center rounded-lg px-5 py-2.5 text-sm font-medium text-white"
         >
           Ny kund
         </Link>
         <Link
           href="/quotes"
-          className="inline-flex items-center rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+          className="inline-flex items-center rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 hover:border-white/30"
         >
           Ny offert
         </Link>
         <Link
           href="/prospektering"
-          className="inline-flex items-center rounded-lg border border-brand-500 px-5 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50"
+          className="inline-flex items-center rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 hover:border-white/30"
         >
           Starta prospektering
         </Link>

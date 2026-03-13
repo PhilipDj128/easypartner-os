@@ -10,6 +10,7 @@ export interface CompanyInfo {
   board_members: string[];
   companies_owned: number | null;
   subscriptions: number | null;
+  active?: boolean;
 }
 
 /** Svenska telefonnummer: 07X-XXX XX XX, 08-XXX XX XX, 0X-XX XX XX */

@@ -1,29 +1,65 @@
 @import "tailwindcss";
 
 :root {
-  --background: #faf8f5;
-  --foreground: #1a2a4a;
+  --bg-base: #0a0f1e;
+  --bg-panel: #111827;
+  --accent: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.4);
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-serif: Georgia, "Times New Roman", serif;
-  --color-brand-50: #f0f4ff;
-  --color-brand-100: #dce6ff;
-  --color-brand-500: #4a6fa5;
-  --color-brand-600: #3a5a8a;
-  --color-brand-900: #1a2a4a;
-  --color-sand-50: #faf8f5;
-  --color-sand-100: #f5f0e8;
-  --color-sand-200: #e8dfd0;
+  --color-bg-base: var(--bg-base);
+  --color-bg-panel: var(--bg-panel);
+  --color-accent: var(--accent);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --font-sans: var(--font-body);
 }
 
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+/* Glassmorphism cards */
+.glass-card {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Glow button */
+.btn-primary {
+  background: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  transition: all 150ms ease;
+}
+.btn-primary:hover {
+  box-shadow: 0 0 28px var(--accent-glow);
+  filter: brightness(1.1);
+}
+
+/* Table row hover */
+.table-row-hover:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease forwards;
 }

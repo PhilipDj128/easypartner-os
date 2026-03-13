@@ -251,6 +251,10 @@ export async function POST(request: Request) {
               //
             }
           }
+          if (!sales_pitch && issues.length > 0) {
+            const top = ISSUE_TO_LABEL[issues[0]] || issues[0];
+            sales_pitch = `Vi hjälper ${companyName} med ${top.toLowerCase()} och kan stärka er digitala närvaro.`;
+          }
 
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,

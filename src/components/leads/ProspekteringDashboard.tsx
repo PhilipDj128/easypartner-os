@@ -272,7 +272,9 @@ export function ProspekteringDashboard() {
                       ))}
                     </div>
                     {lead.sales_pitch && (
-                      <p className="mt-2 text-sm text-sand-700 line-clamp-2">{lead.sales_pitch}</p>
+                      <p className="mt-2 text-sm italic text-sand-800 line-clamp-2" title={lead.sales_pitch}>
+                        {lead.sales_pitch}
+                      </p>
                     )}
                   </div>
                   <button

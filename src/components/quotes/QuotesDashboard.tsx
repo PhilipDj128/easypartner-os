@@ -282,6 +282,13 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                     </td>
                     <td className="whitespace-nowrap px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">
+                        <a
+                          href={`/api/quotes/${q.id}/pdf`}
+                          download={`offert-${q.id.slice(0, 8)}.pdf`}
+                          className="text-sm text-brand-600 hover:text-brand-900"
+                        >
+                          Ladda ner PDF
+                        </a>
                         {q.status === 'draft' && (
                           <button
                             type="button"

@@ -13,20 +13,34 @@ interface Lead {
   poor_seo?: boolean;
   runs_ads?: boolean;
   slow_site?: boolean;
+  no_mobile?: boolean;
+  has_facebook_pixel?: boolean;
   built_by?: string | null;
+  sales_pitch?: string | null;
 }
 
 const ISSUE_LABELS: Record<string, string> = {
   poor_seo: 'Dålig SEO',
-  runs_ads: 'Kör Ads',
+  runs_ads: 'Google Ads',
+  has_facebook_pixel: 'Facebook Pixel',
   slow_site: 'Långsam sida',
+  no_mobile: 'Ingen mobil',
+  no_title_or_short: 'Saknar title',
+  poor_seo_meta: 'Dålig SEO-meta',
+  no_meta_desc: 'Saknar meta',
   built_by_other: 'Byggd av annan byrå',
 };
 
 function getScoreColor(score: number): string {
-  if (score <= 40) return 'bg-red-100 text-red-800';
-  if (score <= 70) return 'bg-amber-100 text-amber-800';
-  return 'bg-green-100 text-green-800';
+  if (score >= 70) return 'bg-red-100 text-red-800';
+  if (score >= 40) return 'bg-amber-100 text-amber-800';
+  return 'bg-gray-100 text-gray-600';
+}
+
+function getPriorityStar(score: number): { icon: string; title: string; color: string } {
+  if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-red-600' };
+  if (score >= 40) return { icon: '★', title: 'Prioritet: Medel', color: 'text-amber-500' };
+  return { icon: '☆', title: 'Prioritet: Låg', color: 'text-gray-400' };
 }
 
 export function ProspekteringDashboard() {
@@ -35,24 +49,77 @@ export function ProspekteringDashboard() {
   const [city, setCity] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [progress, setProgress] = useState(0);
   const [addingId, setAddingId] = useState<string | null>(null);
+  const [filterHighScore, setFilterHighScore] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+      setLoading(true);
     setLeads([]);
+    setProgress(0);
+    setLoadingMessage('Startar prospektering...');
     try {
-      const res = await fetch('/api/prospects', {
+      const res = await fetch('/api/prospects/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ industry: industry || 'städfirma', city: city || 'Västerås' }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setLeads(Array.isArray(data) ? data : []);
+      if (!res.ok || !res.body) {
+        setProgress(0);
+        setLoadingMessage('');
+        setLoading(false);
+        return;
       }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const newLeads: Lead[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.type === 'progress') {
+                setLoadingMessage(data.message || 'Analyserar...');
+                if (typeof data.progress === 'number') setProgress(data.progress);
+              } else if (data.type === 'lead') {
+                newLeads.push(data.lead);
+                setLeads([...newLeads]);
+                if (typeof data.progress === 'number') setProgress(data.progress);
+              } else if (data.type === 'done') {
+                if (data.leads?.length) setLeads(data.leads);
+                setProgress(100);
+                setLoadingMessage('');
+                setLoading(false);
+                router.refresh();
+                return;
+              } else if (data.type === 'error') {
+                alert(data.message || 'Ett fel inträffade');
+                setProgress(0);
+                setLoadingMessage('');
+                setLoading(false);
+                return;
+              }
+            } catch {
+              // Ignorera parsefel
+            }
+          }
+        }
+      }
+      setLeads(newLeads);
+      setLoadingMessage('');
+      router.refresh();
     } catch {
       setLeads([]);
+      setProgress(0);
+      setLoadingMessage('');
     } finally {
       setLoading(false);
     }
@@ -89,10 +156,16 @@ export function ProspekteringDashboard() {
     const badges: string[] = [];
     if (lead.poor_seo || lead.issues?.includes('poor_seo')) badges.push('poor_seo');
     if (lead.runs_ads || lead.issues?.includes('runs_ads')) badges.push('runs_ads');
+    if (lead.has_facebook_pixel || lead.issues?.includes('has_facebook_pixel')) badges.push('has_facebook_pixel');
     if (lead.slow_site || lead.issues?.includes('slow_site')) badges.push('slow_site');
+    if (lead.no_mobile || lead.issues?.includes('no_mobile')) badges.push('no_mobile');
+    if (lead.issues?.includes('no_title_or_short')) badges.push('no_title_or_short');
+    if (lead.issues?.includes('no_meta_desc')) badges.push('no_meta_desc');
     if (lead.built_by || lead.issues?.includes('built_by_other')) badges.push('built_by_other');
     return badges;
   };
+
+  const displayedLeads = filterHighScore ? leads.filter((l) => l.score >= 70) : leads;
 
   return (
     <div className="space-y-8">
@@ -119,30 +192,62 @@ export function ProspekteringDashboard() {
               className="mt-1 w-48 rounded-lg border border-sand-200 px-3 py-2"
             />
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end gap-4">
             <button
               type="submit"
               disabled={loading}
               className="rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600 disabled:opacity-50"
             >
-              {loading ? 'Söker…' : 'Starta prospektering'}
+              {loading ? 'Analyserar…' : 'Starta prospektering'}
             </button>
           </div>
+          {loading && (
+            <div className="mt-4 w-full">
+              <div className="flex items-center justify-between gap-2 text-sm text-brand-600">
+                <span>{loadingMessage}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-sand-100">
+                <div
+                  className="h-full rounded-full bg-brand-500 transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </form>
 
       {leads.length > 0 && (
         <div className="space-y-4">
-          <h3 className="font-serif text-lg font-semibold text-brand-900">Resultat</h3>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h3 className="font-serif text-lg font-semibold text-brand-900">Resultat</h3>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={filterHighScore}
+                onChange={(e) => setFilterHighScore(e.target.checked)}
+                className="rounded border-sand-200"
+              />
+              Visa endast leads med score 70+
+            </label>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            {leads.map((lead) => (
+            {displayedLeads.map((lead) => {
+              const priority = getPriorityStar(lead.score);
+              return (
               <div
                 key={lead.id}
                 className="rounded-xl border border-sand-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-medium text-brand-900 truncate">{lead.company_name}</h4>
+                    <div className="flex items-center gap-2">
+                      <span title={priority.title} className={`text-lg ${priority.color}`}>
+                        {priority.icon}
+                      </span>
+                      <h4 className="font-medium text-brand-900 truncate">{lead.company_name}</h4>
+                    </div>
                     <a
                       href={lead.website}
                       target="_blank"
@@ -166,6 +271,9 @@ export function ProspekteringDashboard() {
                         </span>
                       ))}
                     </div>
+                    {lead.sales_pitch && (
+                      <p className="mt-2 text-sm text-sand-700 line-clamp-2">{lead.sales_pitch}</p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -177,8 +285,12 @@ export function ProspekteringDashboard() {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
+          {filterHighScore && displayedLeads.length === 0 && (
+            <p className="text-center text-sm text-sand-200">Inga leads med score 70+</p>
+          )}
         </div>
       )}
 

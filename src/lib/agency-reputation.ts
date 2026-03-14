@@ -4,6 +4,32 @@
 
 import { searchAllabolagAgencyStatus } from './company-info';
 
+/** Sök site:trustpilot.com [byrånamn] via SerpAPI, extrahera betyg från snippet */
+export async function fetchTrustpilotRatingForAgency(
+  agencyName: string,
+  searchSerpFn: (q: string) => Promise<{ organic_results?: { snippet?: string; title?: string }[] }>
+): Promise<{ rating: number | null; url: string | null }> {
+  if (!agencyName || agencyName.length < 2) return { rating: null, url: null };
+  try {
+    const res = await searchSerpFn(`site:trustpilot.com ${agencyName}`);
+    const results = res?.organic_results ?? [];
+    for (const r of results) {
+      const snippet = ((r.snippet ?? '') + ' ' + (r.title ?? '')).toLowerCase();
+      const ratingMatch = snippet.match(/(\d[,.]\d)\s*\/\s*5|(\d[,.]\d)\s*av\s*5|rating[:\s]*(\d[,.]\d)/i);
+      if (ratingMatch) {
+        const rating = parseFloat((ratingMatch[1] || ratingMatch[2] || ratingMatch[3] || '0').replace(',', '.'));
+        if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+          const link = (r as { link?: string }).link ?? null;
+          return { rating, url: link };
+        }
+      }
+    }
+  } catch {
+    //
+  }
+  return { rating: null, url: null };
+}
+
 export interface AgencyReputation {
   agency_name: string;
   trustpilot_rating: number | null;

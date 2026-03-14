@@ -30,9 +30,10 @@ export async function POST(request: Request) {
       notesParts.push(`#${industry_city_rank} för "${industry} ${city}"`);
     if (company_info && typeof company_info === 'object') {
       const ci = company_info as Record<string, unknown>;
-      if (ci.org_number) notesParts.push(`Org.nr: ${ci.org_number}`);
-      if (ci.ceo) notesParts.push(`VD: ${ci.ceo}`);
-      if (ci.revenue) notesParts.push(`Omsättning: ${ci.revenue}`);
+      if (ci.google_places_rating != null) notesParts.push(`Google: ${ci.google_places_rating}★`);
+      if (ci.pagespeed_score != null) notesParts.push(`PageSpeed: ${ci.pagespeed_score}/100`);
+      if (ci.built_by_agency) notesParts.push(`Byggd av: ${ci.built_by_agency}`);
+      if (ci.agency_trustpilot_rating != null) notesParts.push(`Byråns Trustpilot: ${ci.agency_trustpilot_rating}/5`);
     }
 
     const { data: customer, error } = await supabase

@@ -1,18 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { searchSerp } from '@/lib/serpapi';
-import { perplexitySearch } from '@/lib/perplexity';
 import Anthropic from '@anthropic-ai/sdk';
 import { analyzeWebsite } from '@/lib/prospect-analyzer';
-import {
-  lookupPtsOperator,
-  searchMerinfo,
-  searchAllabolagOrgNumber,
-  fetchAllabolag,
-  normalizePhone,
-} from '@/lib/company-info';
-import { fetchRoaringCompanyInfo } from '@/lib/roaring';
-import { fetchAgencyReputation } from '@/lib/agency-reputation';
+import { lookupPtsOperator, normalizePhone } from '@/lib/company-info';
+import { fetchAgencyReputation, fetchTrustpilotRatingForAgency } from '@/lib/agency-reputation';
+import { fetchPlaceByCompanyAndCity } from '@/lib/google-places';
+import { runPageSpeed } from '@/lib/google-pagespeed';
 
 const BLOCKED_DOMAINS = [
   'wikipedia.org',
@@ -173,6 +167,7 @@ function calculateLeadScore(flags: {
   no_title_or_short?: boolean;
   no_meta_desc?: boolean;
   poor_seo?: boolean;
+  low_ranking?: boolean;
   pays_catalog?: boolean;
   buys_leads?: boolean;
   agency_trustpilot_under_3?: boolean;
@@ -191,6 +186,7 @@ function calculateLeadScore(flags: {
   if (flags.no_title_or_short) score += 10;
   if (flags.no_meta_desc) score += 10;
   if (flags.poor_seo) score += 20;
+  if (flags.low_ranking) score += 15;
   if (flags.agency_trustpilot_under_3) score += 30;
   if (flags.agency_on_warning_list) score += 30;
   if (flags.agency_negative_reviews_10_plus) score += 20;
@@ -200,15 +196,18 @@ function calculateLeadScore(flags: {
 
 const ISSUE_TO_LABEL: Record<string, string> = {
   built_by_other: 'Byggd av annan byrå',
-  runs_ads: 'Google Ads',
+  runs_ads: 'Kör Google Ads',
   has_facebook_pixel: 'Facebook Pixel',
   pays_catalog: 'Betalar katalog',
   buys_leads: 'Köper leads',
-  slow_site: 'Långsam sida',
+  slow_site: 'Långsam hemsida',
   no_mobile: 'Ingen mobil',
   no_title_or_short: 'Saknar title',
   no_meta_desc: 'Saknar meta description',
   poor_seo: 'Dålig SEO',
+  low_ranking: 'Låg ranking',
+  bad_google_reviews: 'Dåliga Google-recensioner',
+  agency_bad_reviews: 'Byrån har dåliga recensioner',
 };
 
 export async function POST(request: Request) {
@@ -246,6 +245,8 @@ export async function POST(request: Request) {
         const orgs = allOrgs
           .filter((r: { link?: string }) => r.link && !isBlockedDomain(r.link))
           .slice(0, 20);
+        const serpAds = (serpResult?.ads ?? serpResult?.paid_results ?? []) as { link?: string; displayed_link?: string }[];
+        const adLinks = serpAds.map((a) => (a.link || a.displayed_link || '').toLowerCase()).filter(Boolean);
 
         if (orgs.length === 0) {
           send({ type: 'done', leads: [], progress: 100 });
@@ -320,26 +321,6 @@ export async function POST(request: Request) {
           })
         );
 
-        let perplexityInfoMap: Record<number, string> = {};
-        if (
-          process.env.PERPLEXITY_API_KEY &&
-          !process.env.PERPLEXITY_API_KEY.startsWith('din_')
-        ) {
-          const pResults = await Promise.all(
-            analyses.map(({ companyName, website }) =>
-              perplexitySearch(
-                `Har ${companyName} (${website}) Google Ads eller annan digital marknadsföring? Svara kort ja eller nej på svenska.`
-              ).catch(() => null)
-            )
-          );
-          perplexityInfoMap = Object.fromEntries(
-            analyses.map((_, i) => [
-              i,
-              (pResults[i]?.choices?.[0]?.message?.content as string) || '',
-            ])
-          );
-        }
-
         const savedLeads: unknown[] = [];
         const total = analyses.length;
         let doneCount = 0;
@@ -356,11 +337,16 @@ export async function POST(request: Request) {
           const catalog_presence = se.catalog_presence;
           const name_rank = se.name_rank;
           const industry_city_rank = index + 1;
-          let runs_ads = analysis.runs_ads;
-          const perplexityInfo = perplexityInfoMap[index] || '';
-          if (/ja|kör|har ads|google ads/i.test(perplexityInfo)) {
-            runs_ads = true;
+          let siteHost = '';
+          try {
+            siteHost = new URL(website).hostname.replace(/^www\./, '').toLowerCase();
+          } catch {
+            siteHost = website.toLowerCase();
           }
+          const runs_ads =
+            analysis.runs_ads ||
+            adLinks.some((adUrl) => adUrl.includes(siteHost));
+          const low_ranking = industry_city_rank >= 4;
 
           const issues: string[] = [];
           if (analysis.built_by_other) issues.push('built_by_other');
@@ -368,7 +354,7 @@ export async function POST(request: Request) {
           if (analysis.has_facebook_pixel) issues.push('has_facebook_pixel');
           if (pays_catalog) issues.push('pays_catalog');
           if (buys_leads) issues.push('buys_leads');
-          if (analysis.slow_site) issues.push('slow_site');
+          if (low_ranking) issues.push('low_ranking');
           if (analysis.no_mobile) issues.push('no_mobile');
           if (analysis.no_title_or_short) issues.push('no_title_or_short');
           if (analysis.no_meta_desc) issues.push('no_meta_desc');
@@ -376,7 +362,6 @@ export async function POST(request: Request) {
 
           const builtByAgency = analysis.built_by_agency || analysis.built_by_text;
 
-          let decision_makers: { name: string; title: string; linkedin_url: string }[] = [];
           const allPhones = (analysis as { phones?: string[] }).phones ?? [];
           const directPhones = allPhones.filter((p) => {
             const d = p.replace(/\D/g, '');
@@ -385,70 +370,20 @@ export async function POST(request: Request) {
           });
           let contact_phone: string | null = allPhones[0] ?? null;
           let company_info: {
-            org_number?: string | null;
-            revenue?: string | null;
-            employees?: string | null;
-            ceo?: string | null;
-            board_members?: string[];
-            companies_owned?: number | null;
-            subscriptions?: number | null;
-            active?: boolean;
+            google_places_name?: string | null;
+            google_places_phone?: string | null;
+            google_places_rating?: number | null;
+            google_places_review_count?: number | null;
+            pagespeed_score?: number | null;
+            load_time_seconds?: number | null;
+            built_by_agency?: string | null;
+            agency_trustpilot_rating?: number | null;
           } = {};
           let pts_operator: string | null = null;
           let pts_is_switchboard = false;
           let pts_switchboard_provider: string | null = null;
-
-          try {
-            const merinfo = await searchMerinfo(companyName);
-            if (merinfo.phone && !contact_phone) contact_phone = merinfo.phone;
-            if (merinfo.subscriptions != null) company_info.subscriptions = merinfo.subscriptions;
-
-            let orgNumber: string | null = null;
-            let roaringData: Awaited<ReturnType<typeof fetchRoaringCompanyInfo>> = null;
-
-            if (website) {
-              roaringData = await fetchRoaringCompanyInfo(website, null);
-              if (roaringData?.org_number) {
-                orgNumber = roaringData.org_number.replace(/\D/g, '');
-              }
-            }
-            if (!orgNumber && merinfo.orgNumber) {
-              orgNumber = merinfo.orgNumber.replace(/\D/g, '');
-            }
-            if (!orgNumber && companyName) {
-              const allabolagOrg = await searchAllabolagOrgNumber(companyName);
-              if (allabolagOrg) orgNumber = allabolagOrg;
-            }
-
-            if (orgNumber) {
-              company_info.org_number = orgNumber.replace(/(\d{6})(\d{4})/, '$1-$2');
-              const allabolag = await fetchAllabolag(orgNumber);
-              company_info = { ...company_info, ...allabolag };
-              if (roaringData) {
-                if (roaringData.revenue) company_info.revenue = roaringData.revenue;
-                if (roaringData.employees) company_info.employees = roaringData.employees;
-                if (roaringData.ceo) {
-                  company_info.ceo = roaringData.ceo;
-                  decision_makers = [{ name: roaringData.ceo, title: 'VD', linkedin_url: '' }];
-                }
-                if (roaringData.board_members?.length) company_info.board_members = roaringData.board_members;
-                company_info.active = roaringData.active;
-              }
-            }
-            if (contact_phone) {
-              const norm = normalizePhone(contact_phone);
-              const ptsResult = await lookupPtsOperator(norm);
-              pts_operator = ptsResult.operator;
-              pts_is_switchboard = ptsResult.isSwitchboard;
-              pts_switchboard_provider = ptsResult.switchboardProvider ?? null;
-              if (pts_is_switchboard && directPhones.length > 0) {
-                contact_phone = directPhones[0];
-              }
-            }
-          } catch {
-            //
-          }
-
+          let slow_site = false;
+          let agency_trustpilot_rating: number | null = null;
           let agency_reputation: {
             agency_name: string;
             trustpilot_rating: number | null;
@@ -462,12 +397,54 @@ export async function POST(request: Request) {
             agency_defunct?: boolean;
           } | null = null;
 
+          try {
+            const [placeInfo, pageSpeedResult] = await Promise.all([
+              fetchPlaceByCompanyAndCity(companyName, city),
+              website ? runPageSpeed(website) : Promise.resolve({ performance_score: null, load_time_seconds: null }),
+            ]);
+            if (placeInfo.phone && !contact_phone) contact_phone = placeInfo.phone;
+            company_info.google_places_name = placeInfo.name ?? undefined;
+            company_info.google_places_phone = placeInfo.phone ?? undefined;
+            company_info.google_places_rating = placeInfo.rating ?? undefined;
+            company_info.google_places_review_count = placeInfo.user_ratings_total ?? undefined;
+            company_info.pagespeed_score = pageSpeedResult.performance_score ?? undefined;
+            company_info.load_time_seconds = pageSpeedResult.load_time_seconds ?? undefined;
+            if (typeof placeInfo.rating === 'number' && placeInfo.rating < 3.5) {
+              issues.push('bad_google_reviews');
+            }
+            if (typeof pageSpeedResult.performance_score === 'number') {
+              slow_site = pageSpeedResult.performance_score < 50;
+              if (slow_site) issues.push('slow_site');
+            }
+            company_info.built_by_agency = builtByAgency ?? undefined;
+          } catch {
+            //
+          }
+
           if (builtByAgency) {
             try {
-              agency_reputation = await fetchAgencyReputation(
-                builtByAgency,
-                (q) => searchSerp(q, 'Sweden', 10)
-              );
+              const tp = await fetchTrustpilotRatingForAgency(builtByAgency, (query) => searchSerp(query, 'Sweden'));
+              agency_trustpilot_rating = tp.rating;
+              company_info.agency_trustpilot_rating = tp.rating ?? undefined;
+              if (tp.rating != null && tp.rating < 3.5) {
+                issues.push('agency_bad_reviews');
+              }
+              agency_reputation = await fetchAgencyReputation(builtByAgency, (q) => searchSerp(q, 'Sweden', 10));
+            } catch {
+              //
+            }
+          }
+
+          if (contact_phone) {
+            try {
+              const norm = normalizePhone(contact_phone);
+              const ptsResult = await lookupPtsOperator(norm);
+              pts_operator = ptsResult.operator;
+              pts_is_switchboard = ptsResult.isSwitchboard;
+              pts_switchboard_provider = ptsResult.switchboardProvider ?? null;
+              if (pts_is_switchboard && directPhones.length > 0) {
+                contact_phone = directPhones[0];
+              }
             } catch {
               //
             }
@@ -479,19 +456,20 @@ export async function POST(request: Request) {
             has_facebook_pixel: analysis.has_facebook_pixel,
             pays_catalog,
             buys_leads,
-            slow_site: analysis.slow_site,
+            slow_site,
+            low_ranking,
             no_mobile: analysis.no_mobile,
             no_title_or_short: analysis.no_title_or_short,
             no_meta_desc: analysis.no_meta_desc,
             poor_seo,
-            agency_trustpilot_under_3: agency_reputation?.trustpilot_rating != null && agency_reputation.trustpilot_rating < 3,
+            agency_trustpilot_under_3: agency_trustpilot_rating != null && agency_trustpilot_rating < 3.5,
             agency_on_warning_list: agency_reputation?.on_warning_list ?? false,
             agency_negative_reviews_10_plus: (agency_reputation?.negative_review_count ?? 0) > 10,
             agency_defunct: agency_reputation?.agency_defunct ?? false,
           });
 
           let sales_pitch = '';
-          const dmName = decision_makers.find((dm) => /vd|ceo|chief/i.test(dm.title))?.name;
+          const dmName: string | undefined = undefined;
           if (claude && issues.length > 0) {
             try {
               const issueLabels = issues
@@ -527,7 +505,6 @@ export async function POST(request: Request) {
           if (agency_reputation?.agency_defunct) issues.push('agency_defunct');
           if (agency_reputation?.warned) issues.push('agency_warned');
           if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
-          if (decision_makers.length > 0) issues.push('vd_hittad');
 
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,
@@ -539,7 +516,7 @@ export async function POST(request: Request) {
             issues,
             poor_seo,
             runs_ads,
-            slow_site: analysis.slow_site,
+            slow_site,
             no_mobile: analysis.no_mobile,
             has_facebook_pixel: analysis.has_facebook_pixel,
             pays_catalog,
@@ -559,7 +536,7 @@ export async function POST(request: Request) {
             built_by: analysis.built_by_other ? 'annan_byra' : null,
             built_by_agency: analysis.built_by_agency || analysis.built_by_text || null,
             hosted_at: (analysis as { hosted_at?: string | null }).hosted_at ?? null,
-            decision_makers: decision_makers.length > 0 ? decision_makers : null,
+            decision_makers: null,
             sales_pitch: sales_pitch || null,
           };
 

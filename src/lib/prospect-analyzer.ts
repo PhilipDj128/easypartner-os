@@ -85,25 +85,31 @@ const KNOWN_AGENCIES = [
   'Lowe Brindfors',
 ];
 
-/** Nyckelord som måste finnas inom 50 tecken från byrånamnet */
+/** Nyckelord för footer/byrå-detektion (exakt enligt spec) */
 const AGENCY_KEYWORDS = [
-  'skapad av',
+  'webdesign',
+  'webbyrå',
   'byggd av',
+  'skapad av',
   'designed by',
   'developed by',
-  'created by',
-  'powered by',
-  'web by',
-  'design by',
-  'designad av',
-  'utvecklad av',
-  'made by',
 ];
 
 /** "by" endast som del av längre fras för att undvika falska träffar */
 const AGENCY_KEYWORD_BY = /\b(?:site|web|page)\s+by\b/i;
 
-const MAX_DISTANCE_CHARS = 50;
+const MAX_DISTANCE_CHARS = 80;
+
+/** Extrahera byrånamn från text efter nyckelord (t.ex. "byggd av Acme Web" -> "Acme Web") */
+function extractAgencyNameFromWindow(windowText: string, keyword: string): string | null {
+  const idx = windowText.toLowerCase().indexOf(keyword.toLowerCase());
+  if (idx === -1) return null;
+  const after = windowText.slice(idx + keyword.length).trim();
+  const match = after.match(/^([A-Za-zÅÄÖåäö0-9\s&.\-]+?)(?:\s*[|\-–,.]|$|<|&copy;|©)/);
+  const name = (match ? match[1] : after.slice(0, 60)).trim();
+  if (name.length < 2 || name.length > 55) return null;
+  return name;
+}
 
 /** Byrå → vanliga domändelar för länk-matchning */
 const AGENCY_DOMAINS: Record<string, string[]> = {
@@ -127,10 +133,10 @@ function getSearchZones(html: string): { text: string; raw: string }[] {
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   const body = bodyMatch ? bodyMatch[1] : html;
-  const last20Len = Math.floor(body.length * 0.2);
-  const last20 = body.slice(-last20Len);
-  if (last20.length > 0) {
-    zones.push({ raw: last20, text: last20.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') });
+  const last30Len = Math.floor(body.length * 0.3);
+  const last30 = body.slice(-last30Len);
+  if (last30.length > 0) {
+    zones.push({ raw: last30, text: last30.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') });
   }
 
   const linkMatches = html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi);
@@ -158,6 +164,9 @@ function detectAgencyStrict(html: string, url: string): { agency: string; trigge
       while ((m = kwRe.exec(searchText)) !== null) {
         const start = m.index;
         const window = searchText.slice(start, start + kw.length + MAX_DISTANCE_CHARS);
+
+        const extracted = extractAgencyNameFromWindow(window, kw);
+        if (extracted) return { agency: extracted, triggeredBy: window.slice(0, 100).trim() };
 
         for (const agency of KNOWN_AGENCIES) {
           const agencyRe = new RegExp('\\b' + agency.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');

@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { ScoreCircle } from './ScoreCircle';
 
 interface CompanyInfo {
-  org_number?: string | null;
-  revenue?: string | null;
-  employees?: string | null;
-  ceo?: string | null;
-  board_members?: string[];
-  companies_owned?: number | null;
-  subscriptions?: number | null;
-  active?: boolean;
+  google_places_name?: string | null;
+  google_places_phone?: string | null;
+  google_places_rating?: number | null;
+  google_places_review_count?: number | null;
+  pagespeed_score?: number | null;
+  load_time_seconds?: number | null;
+  built_by_agency?: string | null;
+  agency_trustpilot_rating?: number | null;
 }
 
 interface AgencyReputation {
@@ -65,16 +65,19 @@ interface Lead {
 const ISSUE_LABELS: Record<string, string> = {
   bytt_byra_nyligen: 'Bytt byrå nyligen',
   poor_seo: 'Dålig SEO',
-  runs_ads: 'Google Ads',
+  runs_ads: 'Kör Google Ads',
   has_facebook_pixel: 'Kör Facebook-annonsering',
   pays_catalog: 'Betalar katalog',
   buys_leads: 'Köper leads',
-  slow_site: 'Långsam sida',
+  slow_site: 'Långsam hemsida',
   no_mobile: 'Ingen mobil',
   no_title_or_short: 'Saknar title',
   poor_seo_meta: 'Dålig SEO-meta',
   no_meta_desc: 'Saknar meta',
   built_by_other: 'Byggd av annan byrå',
+  low_ranking: 'Låg ranking',
+  bad_google_reviews: 'Dåliga Google-recensioner',
+  agency_bad_reviews: 'Byrån har dåliga recensioner',
   pts_switchboard: 'Växel',
   agency_warned: 'Varning: Byrån har dåliga recensioner',
   agency_hot_lead: 'Missnöjd med byrå',
@@ -543,35 +546,23 @@ export function ProspekteringDashboard() {
                       <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
                         <p className="font-medium text-white/90">Företagsinfo</p>
                         <ul className="mt-1 space-y-0.5 text-[#94a3b8]">
-                          {lead.company_info.org_number && (
-                            <li>Org.nr: {lead.company_info.org_number}</li>
+                          {lead.company_info.google_places_name && (
+                            <li>Google: {lead.company_info.google_places_name}</li>
                           )}
-                          {lead.company_info.revenue && (
-                            <li>Omsättning: {lead.company_info.revenue}</li>
+                          {lead.company_info.google_places_phone && (
+                            <li>Telefon: {lead.company_info.google_places_phone}</li>
                           )}
-                          {lead.company_info.employees && (
-                            <li>Anställda: {lead.company_info.employees}</li>
+                          {lead.company_info.google_places_rating != null && (
+                            <li>Betyg: {lead.company_info.google_places_rating} ★{lead.company_info.google_places_review_count != null ? ` (${lead.company_info.google_places_review_count} recensioner)` : ''}</li>
                           )}
-                          {lead.company_info.ceo && (
-                            <li>VD: {lead.company_info.ceo}</li>
+                          {lead.company_info.pagespeed_score != null && (
+                            <li>PageSpeed: {lead.company_info.pagespeed_score}/100{lead.company_info.load_time_seconds != null ? `, laddning ${lead.company_info.load_time_seconds} s` : ''}</li>
                           )}
-                          {lead.company_info.board_members && lead.company_info.board_members.length > 0 && (
-                            <li>Styrelse: {lead.company_info.board_members.join(', ')}</li>
+                          {lead.company_info.built_by_agency && (
+                            <li>Byggd av: {lead.company_info.built_by_agency}</li>
                           )}
-                          {lead.company_info.companies_owned != null && (
-                            <li>Registrerade företag (ägare): {lead.company_info.companies_owned}</li>
-                          )}
-                          {lead.company_info.subscriptions != null && (
-                            <li>Abonnemang: {lead.company_info.subscriptions}</li>
-                          )}
-                          {lead.company_info.active !== undefined && (
-                            <li>
-                              Status: {lead.company_info.active ? (
-                                <span className="text-emerald-400">Aktivt</span>
-                              ) : (
-                                <span className="text-amber-400">Ej aktivt</span>
-                              )}
-                            </li>
+                          {lead.company_info.agency_trustpilot_rating != null && (
+                            <li>Byråns Trustpilot: {lead.company_info.agency_trustpilot_rating}/5</li>
                           )}
                         </ul>
                       </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ScoreCircle } from './ScoreCircle';
+import { SpeedBar } from '@/components/ui/SpeedBar';
 
 interface CompanyInfo {
   google_places_name?: string | null;
@@ -43,7 +44,7 @@ interface Lead {
   has_facebook_pixel?: boolean;
   pays_catalog?: boolean;
   buys_leads?: boolean;
-  buys_leads_sites?: { site: string; estimatedMonthly?: number }[];
+  buys_leads_sites?: string[];
   catalog_presence?: string[];
   industry_city_rank?: number;
   name_rank?: number | null;
@@ -86,15 +87,15 @@ const ISSUE_LABELS: Record<string, string> = {
 };
 
 function getScoreColor(score: number): string {
-  if (score >= 70) return 'bg-rose-500/20 text-rose-400';
+  if (score >= 70) return 'bg-emerald-500/20 text-emerald-400';
   if (score >= 40) return 'bg-amber-500/20 text-amber-400';
-  return 'bg-white/10 text-[#94a3b8]';
+  return 'badge-gray';
 }
 
 function getPriorityStar(score: number): { icon: string; title: string; color: string } {
-  if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-rose-400' };
+  if (score >= 70) return { icon: '★', title: 'Prioritet: Hög', color: 'text-emerald-400' };
   if (score >= 40) return { icon: '★', title: 'Prioritet: Medel', color: 'text-amber-400' };
-  return { icon: '☆', title: 'Prioritet: Låg', color: 'text-[#94a3b8]' };
+  return { icon: '☆', title: 'Prioritet: Låg', color: 'text-[var(--muted)]' };
 }
 
 function formatPhone(phone: string): string {
@@ -244,34 +245,34 @@ export function ProspekteringDashboard() {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSearch} className="glass-card rounded-xl p-6 transition-all duration-150 hover:border-white/[0.12]">
-        <h3 className="font-heading text-lg font-semibold text-white">Sök leads</h3>
+      <form onSubmit={handleSearch} className="card p-6">
+        <h3 className="font-heading text-lg font-semibold text-[var(--foreground)]">Sök leads</h3>
         <div className="mt-4 flex flex-wrap gap-4">
           <div>
-            <label className="block text-sm font-medium text-[#94a3b8]">Bransch</label>
+            <label className="block text-sm font-medium text-[var(--muted-foreground)]">Bransch</label>
             <input
               type="text"
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
               placeholder="t.ex. städfirma"
-              className="mt-1 w-48 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+              className="mt-1 w-48 rounded-lg border border-[var(--border)] bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[indigo-400] focus:outline-none focus:ring-1 focus:ring-[indigo-400]"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#94a3b8]">Stad</label>
+            <label className="block text-sm font-medium text-[var(--muted-foreground)]">Stad</label>
             <input
               type="text"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="t.ex. Västerås"
-              className="mt-1 w-48 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+              className="mt-1 w-48 rounded-lg border border-[var(--border)] bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[indigo-400] focus:outline-none focus:ring-1 focus:ring-[indigo-400]"
             />
           </div>
           <div className="flex items-end gap-4">
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+              className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] disabled:opacity-50"
             >
               {loading ? 'Analyserar…' : 'Starta prospektering'}
             </button>
@@ -297,20 +298,20 @@ export function ProspekteringDashboard() {
                   setMonitoringRunning(false);
                 }
               }}
-              className="rounded-lg border border-white/20 px-4 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
+              className="rounded-lg border border-white/20 px-4 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
             >
               {monitoringRunning ? 'Kör bevakning…' : 'Starta bevakning'}
             </button>
           </div>
           {loading && (
             <div className="mt-4 w-full">
-              <div className="flex items-center justify-between gap-2 text-sm text-[#94a3b8]">
+              <div className="flex items-center justify-between gap-2 text-sm text-[var(--muted-foreground)]">
                 <span>{loadingMessage}</span>
                 <span>{progress}%</span>
               </div>
               <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-[#3b82f6] transition-all duration-300"
+                  className="h-full rounded-full bg-[indigo-400] transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -322,13 +323,13 @@ export function ProspekteringDashboard() {
       {leads.length > 0 && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="font-heading text-lg font-semibold text-white">Resultat</h3>
-            <label className="flex items-center gap-2 text-sm text-[#94a3b8]">
+            <h3 className="font-heading text-lg font-semibold text-[var(--foreground)]">Resultat</h3>
+            <label className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
               <input
                 type="checkbox"
                 checked={filterHighScore}
                 onChange={(e) => setFilterHighScore(e.target.checked)}
-                className="rounded border-white/20 bg-white/5"
+                className="rounded border-[var(--border)] bg-white/5"
               />
               Visa endast leads med score 70+
             </label>
@@ -339,7 +340,7 @@ export function ProspekteringDashboard() {
               return (
               <div
                 key={lead.id}
-                className={`glass-card overflow-hidden rounded-xl transition-all duration-150 hover:border-white/[0.12] ${
+                className={`card overflow-hidden rounded-xl transition-all duration-150 hover:border-white/[0.12] ${
                   lead.agency_reputation?.on_warning_list ? 'border-rose-500/30' : ''
                 }`}
               >
@@ -368,14 +369,14 @@ export function ProspekteringDashboard() {
                         <span title={priority.title} className={`text-sm ${priority.color}`}>
                           {priority.icon}
                         </span>
-                        <h4 className="font-medium text-white truncate">{lead.company_name}</h4>
+                        <h4 className="font-medium text-[var(--foreground)] truncate">{lead.company_name}</h4>
                       </div>
                     </div>
                     <a
                       href={lead.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 block truncate text-sm text-[#3b82f6] hover:underline"
+                      className="mt-1 block truncate text-sm text-[indigo-400] hover:underline"
                     >
                       {lead.website}
                     </a>
@@ -395,7 +396,7 @@ export function ProspekteringDashboard() {
                           Ring nu
                         </a>
                         {lead.pts_operator && (
-                          <span className="text-xs text-[#94a3b8]">Operatör: {lead.pts_operator}</span>
+                          <span className="text-xs text-[var(--muted-foreground)]">Operatör: {lead.pts_operator}</span>
                         )}
                         {lead.pts_is_switchboard && lead.pts_switchboard_provider && (
                           <span className="inline-flex rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-medium text-blue-400">
@@ -403,15 +404,15 @@ export function ProspekteringDashboard() {
                           </span>
                         )}
                         {lead.pts_is_switchboard && lead.direct_phones && lead.direct_phones.length > 0 && (
-                          <span className="text-xs text-[#94a3b8]">
+                          <span className="text-xs text-[var(--muted-foreground)]">
                             Direktnummer: {lead.direct_phones.slice(0, 2).map(formatPhone).join(', ')}
                           </span>
                         )}
                       </div>
                     ))}
                     {(lead.name_rank || lead.industry_city_rank) && (
-                      <p className="mt-2 text-xs text-[#94a3b8]">
-                        <span className="font-medium text-white/90">Google-ranking:</span>{' '}
+                      <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+                        <span className="font-medium text-[var(--foreground)]/90">Google-ranking:</span>{' '}
                         {lead.name_rank && `#${lead.name_rank} för "${lead.company_name}"`}
                         {lead.name_rank && lead.industry_city_rank && ' • '}
                         {lead.industry_city_rank && lead.industry && lead.city && (
@@ -420,35 +421,35 @@ export function ProspekteringDashboard() {
                       </p>
                     )}
                     {lead.catalog_presence && lead.catalog_presence.length > 0 && (
-                      <p className="mt-1 text-xs text-[#94a3b8]">
-                        <span className="font-medium text-white/90">Finns på:</span> {lead.catalog_presence.join(', ')}
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        <span className="font-medium text-[var(--foreground)]/90">Finns på:</span> {lead.catalog_presence.join(', ')}
                       </p>
                     )}
                     {lead.hosted_at && (
-                      <p className="mt-1 text-xs text-[#94a3b8]">
-                        <span className="font-medium text-white/90">Hostad på:</span>{' '}
-                        <span className="inline-flex rounded bg-white/10 px-1.5 py-0.5 font-medium text-[#94a3b8]">
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        <span className="font-medium text-[var(--foreground)]/90">Hostad på:</span>{' '}
+                        <span className="inline-flex rounded bg-white/10 px-1.5 py-0.5 font-medium text-[var(--muted-foreground)]">
                           {lead.hosted_at}
                         </span>
                       </p>
                     )}
                     {lead.decision_makers && lead.decision_makers.length > 0 && (
-                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
-                        <p className="font-medium text-white/90">Beslutsfattare</p>
+                      <div className="mt-2 rounded-lg rounded-lg border border-[var(--border)] bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-[var(--foreground)]/90">Beslutsfattare</p>
                         <ul className="mt-1 space-y-1">
                           {lead.decision_makers.map((dm, i) => (
-                            <li key={i} className="text-[#94a3b8]">
+                            <li key={i} className="text-[var(--muted-foreground)]">
                               {dm.linkedin_url ? (
                                 <a
                                   href={dm.linkedin_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-medium text-[#3b82f6] hover:underline"
+                                  className="font-medium text-[indigo-400] hover:underline"
                                 >
                                   {dm.name}
                                 </a>
                               ) : (
-                                <span className="font-medium text-white">{dm.name}</span>
+                                <span className="font-medium text-[var(--foreground)]">{dm.name}</span>
                               )}
                               {' — '}
                               <span>{dm.title}</span>
@@ -466,7 +467,7 @@ export function ProspekteringDashboard() {
                             key === 'agency_defunct' ? 'bg-amber-500/20 text-amber-400' :
                             key === 'pts_switchboard' && lead.pts_switchboard_provider
                               ? 'bg-blue-500/20 text-blue-400'
-                              : 'bg-white/10 text-[#94a3b8]'
+                              : 'bg-white/10 text-[var(--muted-foreground)]'
                           }`}
                         >
                           {key === 'built_by_other' && lead.built_by_agency
@@ -477,38 +478,27 @@ export function ProspekteringDashboard() {
                         </span>
                       ))}
                     </div>
-                    {((lead.pays_catalog || lead.buys_leads || lead.runs_ads) && (
-                      <div className="mt-2 space-y-1 text-xs text-[#94a3b8]">
-                        <p>
-                          <span className="font-medium text-white/90">Spenderar pengar på:</span>{' '}
-                          {[
-                            lead.pays_catalog && 'katalog',
-                            lead.buys_leads && 'leads',
-                            lead.runs_ads && 'ads',
-                          ]
+                    {((lead.pays_catalog || lead.buys_leads) &&
+                      ((lead.catalog_presence?.length ?? 0) > 0 || (lead.buys_leads_sites?.length ?? 0) > 0)) && (
+                      <div className="mt-2 text-xs text-[var(--muted-foreground)]">
+                        <p className="font-medium text-[var(--foreground)]/90">Betalar för:</p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5">
+                          {[...new Set([...(lead.catalog_presence ?? []), ...(lead.buys_leads_sites ?? [])])]
                             .filter(Boolean)
-                            .join(', ')}
-                        </p>
-                        {lead.buys_leads_sites && lead.buys_leads_sites.length > 0 && (
-                          <p>
-                            <span className="font-medium text-white/90">Betalar för leads på:</span>{' '}
-                            {lead.buys_leads_sites.map((s) =>
-                              s.estimatedMonthly
-                                ? `${s.site} (ca ${s.estimatedMonthly.toLocaleString('sv-SE')} kr/mån)`
-                                : s.site
-                            ).join(', ')}
-                          </p>
-                        )}
+                            .map((name) => (
+                              <li key={name}>{name}</li>
+                            ))}
+                        </ul>
                       </div>
-                    ))}
+                    )}
                     {(lead.agency_reputation || lead.built_by_agency) && (
-                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
-                        <p className="font-medium text-white/90">Byråanalys</p>
-                        <p className="mt-1 text-[#94a3b8]">
-                          <span className="font-medium text-white/80">Byrå:</span> {lead.built_by_agency || '—'}
+                      <div className="mt-2 rounded-lg rounded-lg border border-[var(--border)] bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-[var(--foreground)]/90">Byråanalys</p>
+                        <p className="mt-1 text-[var(--muted-foreground)]">
+                          <span className="font-medium text-[var(--foreground)]/80">Byrå:</span> {lead.built_by_agency || '—'}
                         </p>
                         {lead.agency_reputation?.trustpilot_rating != null && (
-                          <p className="mt-0.5 text-[#94a3b8]">
+                          <p className="mt-0.5 text-[var(--muted-foreground)]">
                             Trustpilot: {lead.agency_reputation.trustpilot_rating.toFixed(1)}/5
                             {' ★'.repeat(Math.round(lead.agency_reputation.trustpilot_rating))}
                             {' ☆'.repeat(5 - Math.round(lead.agency_reputation.trustpilot_rating))}
@@ -519,13 +509,13 @@ export function ProspekteringDashboard() {
                             href={lead.agency_reputation.trustpilot_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-1 inline-block text-[#3b82f6] hover:underline"
+                            className="mt-1 inline-block text-[indigo-400] hover:underline"
                           >
                             Se Trustpilot →
                           </a>
                         )}
                         {lead.agency_reputation?.google_reviews_count != null && (
-                          <p className="mt-0.5 text-[#94a3b8]">
+                          <p className="mt-0.5 text-[var(--muted-foreground)]">
                             Google: {lead.agency_reputation.google_reviews_count} recensioner
                             {lead.agency_reputation?.google_rating_avg != null &&
                               ` • ${lead.agency_reputation.google_rating_avg.toFixed(1)}/5`}
@@ -538,14 +528,14 @@ export function ProspekteringDashboard() {
                           <p className="mt-0.5 font-medium text-amber-400">Byrån är nedlagd</p>
                         )}
                         {lead.agency_reputation && !lead.agency_reputation.agency_defunct && lead.built_by_agency && (
-                          <p className="mt-0.5 text-[#94a3b8]">Byrån är aktiv</p>
+                          <p className="mt-0.5 text-[var(--muted-foreground)]">Byrån är aktiv</p>
                         )}
                       </div>
                     )}
                     {lead.company_info && Object.keys(lead.company_info).length > 0 && (
-                      <div className="mt-2 rounded-lg border border-white/10 bg-white/5 p-2 text-xs">
-                        <p className="font-medium text-white/90">Företagsinfo</p>
-                        <ul className="mt-1 space-y-0.5 text-[#94a3b8]">
+                      <div className="mt-2 rounded-lg rounded-lg border border-[var(--border)] bg-white/5 p-2 text-xs">
+                        <p className="font-medium text-[var(--foreground)]/90">Företagsinfo</p>
+                        <ul className="mt-1 space-y-0.5 text-[var(--muted-foreground)]">
                           {lead.company_info.google_places_name && (
                             <li>Google: {lead.company_info.google_places_name}</li>
                           )}
@@ -556,7 +546,10 @@ export function ProspekteringDashboard() {
                             <li>Betyg: {lead.company_info.google_places_rating} ★{lead.company_info.google_places_review_count != null ? ` (${lead.company_info.google_places_review_count} recensioner)` : ''}</li>
                           )}
                           {lead.company_info.pagespeed_score != null && (
-                            <li>PageSpeed: {lead.company_info.pagespeed_score}/100{lead.company_info.load_time_seconds != null ? `, laddning ${lead.company_info.load_time_seconds} s` : ''}</li>
+                            <li className="flex items-center gap-2">
+                              <span>PageSpeed: {lead.company_info.pagespeed_score}/100{lead.company_info.load_time_seconds != null ? `, ${lead.company_info.load_time_seconds} s` : ''}</span>
+                              <SpeedBar value={lead.company_info.pagespeed_score} />
+                            </li>
                           )}
                           {lead.company_info.built_by_agency && (
                             <li>Byggd av: {lead.company_info.built_by_agency}</li>
@@ -568,7 +561,7 @@ export function ProspekteringDashboard() {
                       </div>
                     )}
                     {lead.sales_pitch && (
-                      <p className="mt-2 text-sm italic text-[#94a3b8] line-clamp-2" title={lead.sales_pitch}>
+                      <p className="mt-2 text-sm italic text-[var(--muted-foreground)] line-clamp-2" title={lead.sales_pitch}>
                         {lead.sales_pitch}
                       </p>
                     )}
@@ -578,7 +571,7 @@ export function ProspekteringDashboard() {
                       type="button"
                       onClick={() => handleAddToCrm(lead)}
                       disabled={addingId === lead.id}
-                      className="btn-primary rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      className="btn-primary rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
                     >
                       {addingId === lead.id ? 'Lägger till…' : 'Lägg till i CRM'}
                     </button>
@@ -613,7 +606,7 @@ export function ProspekteringDashboard() {
                         }
                       }}
                       disabled={healthCheckId === lead.id}
-                      className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
+                      className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium text-[var(--foreground)] transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
                     >
                       {healthCheckId === lead.id ? 'Genererar…' : 'Generera hälsokoll'}
                     </button>
@@ -625,14 +618,14 @@ export function ProspekteringDashboard() {
             })}
           </div>
           {filterHighScore && displayedLeads.length === 0 && (
-            <p className="text-center text-sm text-[#94a3b8]">Inga leads med score 70+</p>
+            <p className="text-center text-sm text-[var(--muted-foreground)]">Inga leads med score 70+</p>
           )}
         </div>
       )}
 
       {!loading && leads.length === 0 && (
-        <div className="glass-card rounded-xl p-12 text-center">
-          <p className="text-[#94a3b8]">
+        <div className="card rounded-xl p-12 text-center">
+          <p className="text-[var(--muted-foreground)]">
             Ange bransch och stad, klicka på &quot;Starta prospektering&quot; för att söka leads.
           </p>
         </div>

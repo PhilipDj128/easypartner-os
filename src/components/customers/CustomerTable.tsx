@@ -62,72 +62,54 @@ function getCustomerFlags(customer: Customer) {
 export function CustomerTable({ customers }: CustomerTableProps) {
   if (customers.length === 0) {
     return (
-      <div className="glass-card rounded-xl p-20 text-center">
-        <p className="text-lg text-[#94a3b8]">Inga kunder ännu. Lägg till din första kund ovan.</p>
+      <div className="card p-20 text-center">
+        <p className="text-lg text-[var(--muted-foreground)]">Inga kunder ännu. Lägg till din första kund ovan.</p>
       </div>
     );
   }
 
   return (
-    <div className="glass-card overflow-hidden rounded-xl">
-      <table className="min-w-full">
+    <div className="card overflow-hidden">
+      <table className="min-w-full table-sticky-header">
         <thead>
-          <tr className="border-b border-white/[0.08]">
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+          <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
               Namn
             </th>
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Företag
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Avtalsvärde
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Tjänster
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Status
-            </th>
-            <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Flaggor
-            </th>
-            <th className="px-6 py-4 text-right text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
-              Åtgärd
-            </th>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Företag</th>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Avtalsvärde</th>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Tjänster</th>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Status</th>
+            <th className="px-6 py-4 text-left text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Flaggor</th>
+            <th className="px-6 py-4 text-right text-[11px] font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Åtgärd</th>
           </tr>
         </thead>
         <tbody>
           {customers.map((customer) => {
             const flags = getCustomerFlags(customer);
             return (
-              <tr key={customer.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
-                <td className="whitespace-nowrap px-6 py-4">
+              <tr key={customer.id} className="table-row-hover border-b border-white/[0.04]">
+                <td className="h-12 whitespace-nowrap px-6 py-0">
                   <Link
                     href={`/customers/${customer.id}`}
-                    className="font-medium text-white transition-colors hover:text-[#3b82f6]"
+                    className="flex h-12 items-center font-medium text-[var(--foreground)] transition-colors hover:text-indigo-400"
                   >
                     {customer.name}
                   </Link>
                 </td>
-                <td className="px-6 py-4 text-[#94a3b8]">{customer.company || '—'}</td>
-                <td className="px-6 py-4 text-[#94a3b8]">
-                  {formatCurrency(customer.contract_value)}
-                </td>
-                <td className="max-w-[140px] truncate px-6 py-4 text-sm text-[#94a3b8]">
-                  {customer.services?.join(', ') || '—'}
-                </td>
-                <td className="px-6 py-4">
+                <td className="h-12 px-6 py-0 text-[var(--muted-foreground)]">{customer.company || '—'}</td>
+                <td className="h-12 px-6 py-0 text-[var(--muted-foreground)]">{formatCurrency(customer.contract_value)}</td>
+                <td className="h-12 max-w-[140px] truncate px-6 py-0 text-sm text-[var(--muted-foreground)]">{customer.services?.join(', ') || '—'}</td>
+                <td className="h-12 px-6 py-0">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      customer.status === 'active'
-                        ? 'bg-emerald-500/20 text-emerald-400'
-                        : 'bg-white/10 text-[#94a3b8]'
+                      customer.status === 'active' ? 'badge-blue' : 'badge-gray'
                     }`}
                   >
                     {customer.status}
                   </span>
                 </td>
-                <td className="px-6 py-4">
+                <td className="h-12 px-6 py-0">
                   <div className="flex gap-1.5">
                     {flags.map((flag, i) => (
                       <span
@@ -146,11 +128,8 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                     ))}
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-right">
-                  <Link
-                    href={`/customers/${customer.id}`}
-                    className="text-sm text-[#3b82f6] transition-colors hover:text-[#60a5fa]"
-                  >
+                <td className="h-12 whitespace-nowrap px-6 py-0 text-right">
+                  <Link href={`/customers/${customer.id}`} className="text-sm text-indigo-400 hover:underline">
                     Visa →
                   </Link>
                 </td>

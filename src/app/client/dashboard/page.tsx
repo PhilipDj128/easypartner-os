@@ -41,8 +41,8 @@ export default async function ClientDashboardPage() {
   const admin = getSupabaseAdmin();
   if (!admin) {
     return (
-      <div className="p-8">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+      <div className="min-h-screen p-8" style={{ background: 'var(--background)' }}>
+        <div className="card border-amber-500/30 bg-amber-500/10 p-5 text-amber-200">
           Systemet är inte fullt konfigurerad.
         </div>
       </div>
@@ -58,8 +58,8 @@ export default async function ClientDashboardPage() {
   const customer = (customers ?? [])[0] as Customer | undefined;
   if (!customer) {
     return (
-      <div className="p-8">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800">
+      <div className="min-h-screen p-8" style={{ background: 'var(--background)' }}>
+        <div className="card border-amber-500/30 bg-amber-500/10 p-5 text-amber-200">
           Ingen kund kopplad till denna e-post. Kontakta din partner.
         </div>
       </div>
@@ -121,103 +121,92 @@ export default async function ClientDashboardPage() {
   const companyName = customer.company || customer.name;
 
   return (
-    <div className="min-h-screen bg-sand-50">
-      <header className="border-b border-sand-200 bg-white px-4 py-3">
+    <div
+      className="min-h-screen"
+      style={{
+        backgroundImage: [
+          'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+          'radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, #0a0a0a 80%)',
+        ].join(', '),
+        backgroundSize: '24px 24px, 100% 100%',
+        backgroundPosition: '0 0, 0 0',
+      }}
+    >
+      <header className="border-b px-6 py-4" style={{ borderColor: 'var(--border)', background: 'var(--card)' }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           {customer.logo_url ? (
-            <img
-              src={customer.logo_url}
-              alt={companyName}
-              className="h-10 object-contain"
-            />
+            <img src={customer.logo_url} alt={companyName} className="h-10 object-contain" />
           ) : (
-            <span className="font-serif text-lg font-semibold text-brand-900">
+            <span className="font-heading text-lg font-semibold text-[var(--foreground)]">
               {companyName}
             </span>
           )}
           <form action="/api/auth/signout" method="POST">
-            <button
-              type="submit"
-              className="text-sm text-brand-600 hover:text-brand-900"
-            >
+            <button type="submit" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
               Logga ut
             </button>
           </form>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl px-4 py-8">
-        <h1 className="font-serif text-2xl font-semibold text-brand-900">
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <h1 className="font-heading text-2xl font-semibold text-[var(--foreground)]">
           Välkommen, {companyName}
         </h1>
 
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-sand-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase text-brand-600">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="card p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
               Beräknade besökare denna månad
             </p>
-            <p className="mt-2 text-2xl font-semibold text-brand-900">
+            <p className="mt-2 font-heading text-[22px] font-semibold text-[var(--foreground)]" style={{ fontWeight: 600 }}>
               {estimatedVisitors.toLocaleString('sv-SE')}
             </p>
           </div>
-          <div className="rounded-lg border border-sand-200 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase text-brand-600">SEO-värde (kronor)</p>
-            <p className="mt-2 text-2xl font-semibold text-brand-900">
+          <div className="card p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">SEO-värde (kronor)</p>
+            <p className="mt-2 font-heading text-[22px] font-semibold text-[var(--foreground)]" style={{ fontWeight: 600 }}>
               {formatCurrency(seoValue)}
             </p>
-            <p className="mt-1 text-xs text-sand-200">
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
               {top10Keywords.length} topp-10-sökord × {Math.round(avgSearchVolume).toLocaleString()} snitt sökvolym × 5 kr
             </p>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <div className="rounded-lg border border-sand-200 bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold text-brand-900">
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <div className="card p-6">
+            <h2 className="font-heading text-lg font-semibold text-[var(--foreground)]">
               ↑ Sökord som klättrat denna månad
             </h2>
             {keywordsUp.length === 0 ? (
-              <p className="mt-4 text-sm text-sand-200">
-                Inga sökord har klättrat ännu denna månad.
-              </p>
+              <p className="mt-4 text-sm text-[var(--muted-foreground)]">Inga sökord har klättrat ännu denna månad.</p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {keywordsUp.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex items-center gap-2 text-sm text-green-700"
-                  >
+                  <li key={r.id} className="flex items-center gap-2 text-sm text-emerald-400">
                     <span className="text-lg">↑</span>
                     <span>{r.keyword}</span>
-                    <span className="text-sand-200">
-                      {r.previous_position} → {r.position}
-                    </span>
+                    <span className="text-[var(--muted-foreground)]">{r.previous_position} → {r.position}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          <div className="rounded-lg border border-sand-200 bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold text-brand-900">
+          <div className="card p-6">
+            <h2 className="font-heading text-lg font-semibold text-[var(--foreground)]">
               ↓ Sökord som behöver åtgärd
             </h2>
             {keywordsDown.length === 0 ? (
-              <p className="mt-4 text-sm text-sand-200">
-                Inga sökord som behöver åtgärd denna månad.
-              </p>
+              <p className="mt-4 text-sm text-[var(--muted-foreground)]">Inga sökord som behöver åtgärd denna månad.</p>
             ) : (
               <ul className="mt-4 space-y-2">
                 {keywordsDown.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex items-center gap-2 text-sm text-red-700"
-                  >
+                  <li key={r.id} className="flex items-center gap-2 text-sm text-red-400">
                     <span className="text-lg">↓</span>
                     <span>{r.keyword}</span>
-                    <span className="text-sand-200">
-                      {r.previous_position} → {r.position}
-                    </span>
+                    <span className="text-[var(--muted-foreground)]">{r.previous_position} → {r.position}</span>
                   </li>
                 ))}
               </ul>
@@ -226,33 +215,23 @@ export default async function ClientDashboardPage() {
         </div>
 
         {latestSuggestion?.suggestions && (
-          <div className="mt-8 rounded-lg border border-sand-200 bg-white p-6 shadow-sm">
-            <h2 className="font-serif text-lg font-semibold text-brand-900">
-              Senaste AI-analys
-            </h2>
+          <div className="mt-8 card p-6">
+            <h2 className="font-heading text-lg font-semibold text-[var(--foreground)]">Senaste AI-analys</h2>
             <div className="mt-4 space-y-4">
               {latestSuggestion.suggestions.meta_title && (
                 <div>
-                  <p className="text-xs font-medium uppercase text-brand-600">
-                    Meta-titel
-                  </p>
-                  <p className="mt-1 text-brand-900">
-                    {latestSuggestion.suggestions.meta_title}
-                  </p>
+                  <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Meta-titel</p>
+                  <p className="mt-1 text-[var(--foreground)]">{latestSuggestion.suggestions.meta_title}</p>
                 </div>
               )}
               {latestSuggestion.suggestions.content_suggestions &&
                 latestSuggestion.suggestions.content_suggestions.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium uppercase text-brand-600">
-                      Innehållsförslag
-                    </p>
-                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-brand-900">
-                      {latestSuggestion.suggestions.content_suggestions.map(
-                        (s, i) => (
-                          <li key={i}>{s}</li>
-                        )
-                      )}
+                    <p className="text-xs font-medium uppercase text-[var(--muted-foreground)]">Innehållsförslag</p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-[var(--foreground)]">
+                      {latestSuggestion.suggestions.content_suggestions.map((s, i) => (
+                        <li key={i}>{s}</li>
+                      ))}
                     </ul>
                   </div>
                 )}
@@ -260,8 +239,8 @@ export default async function ClientDashboardPage() {
           </div>
         )}
 
-        <p className="mt-8 text-center text-sm text-sand-200">
-          <Link href="/" className="text-brand-600 hover:underline">
+        <p className="mt-8 text-center text-sm text-[var(--muted-foreground)]">
+          <Link href="/" className="text-indigo-400 hover:underline">
             EasyPartner OS
           </Link>
         </p>

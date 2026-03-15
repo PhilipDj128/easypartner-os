@@ -116,7 +116,7 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-[#94a3b8]">Laddar domäner…</p>
+        <p className="text-[var(--muted-foreground)]">Laddar domäner…</p>
       </div>
     );
   }
@@ -127,40 +127,40 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
+          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150"
         >
           + Lägg till domän
         </button>
       </div>
 
       {domains.length === 0 ? (
-        <div className="glass-card rounded-xl p-20 text-center">
-          <p className="text-lg text-[#94a3b8]">Inga domäner ännu. Lägg till din första domän ovan.</p>
+        <div className="card rounded-xl p-20 text-center">
+          <p className="text-lg text-[var(--muted-foreground)]">Inga domäner ännu. Lägg till din första domän ovan.</p>
         </div>
       ) : (
-        <div className="glass-card overflow-hidden rounded-xl">
+        <div className="card overflow-hidden rounded-xl">
           <table className="min-w-full">
             <thead>
               <tr>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Kund
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Domän
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Webbhotell
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Förnyelsedatum
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Byggd av oss
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Status
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Säljmöjlighet
                 </th>
               </tr>
@@ -170,20 +170,20 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
                 const renewalStatus = getRenewalStatus(d.renewal_date);
                 const isSalesOpp = !d.built_by_us;
                 return (
-                  <tr key={d.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
-                    <td className="px-6 py-5 font-medium text-white">
+                  <tr key={d.id} className="table-row-hover border-b border-[var(--border)]/[0.04] transition-colors duration-150">
+                    <td className="px-6 py-5 font-medium text-[var(--foreground)]">
                       {d.customers?.name ?? '—'}
                     </td>
-                    <td className="px-6 py-5 text-white">{d.domain}</td>
-                    <td className="px-6 py-5 text-[#94a3b8]">
+                    <td className="px-6 py-5 text-[var(--foreground)]">{d.domain}</td>
+                    <td className="px-6 py-5 text-[var(--muted-foreground)]">
                       {d.hosting_provider || '—'}
                     </td>
-                    <td className="px-6 py-5 text-[#94a3b8]">
+                    <td className="px-6 py-5 text-[var(--muted-foreground)]">
                       {formatDate(d.renewal_date)}
                     </td>
                     <td className="px-6 py-5">
                       <span
-                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs ${d.built_by_us ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-[#94a3b8]'}`}
+                        className={`inline-flex rounded-full px-2.5 py-0.5 text-xs ${d.built_by_us ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-[var(--muted-foreground)]'}`}
                       >
                         {d.built_by_us ? 'Ja' : 'Nej'}
                       </span>
@@ -217,73 +217,73 @@ export function DomainsDashboard({ customers }: { customers: Customer[] }) {
 
       {addOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
-            <h3 className="font-heading text-xl font-semibold text-white">Ny domän</h3>
+          <div className="card w-full max-w-md rounded-xl border-[var(--border)]/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-[var(--foreground)]">Ny domän</h3>
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
+                    <option key={c.id} value={c.id} className="bg-[var(--card)] text-[var(--foreground)]">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Domän *</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Domän *</label>
                 <input
                   type="text"
                   name="domain"
                   required
                   placeholder="t.ex. example.se"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Webbhotell</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Webbhotell</label>
                 <input
                   type="text"
                   name="hosting_provider"
                   placeholder="t.ex. Loopia, One.com"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Förnyelsedatum</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Förnyelsedatum</label>
                 <input
                   type="date"
                   name="renewal_date"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6] [color-scheme:dark]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 [color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Byggd av oss</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Byggd av oss</label>
                 <select
                   name="built_by_us"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  <option value="false" className="bg-[#111827] text-white">Nej</option>
-                  <option value="true" className="bg-[#111827] text-white">Ja</option>
+                  <option value="false" className="bg-[var(--card)] text-[var(--foreground)]">Nej</option>
+                  <option value="true" className="bg-[var(--card)] text-[var(--foreground)]">Ja</option>
                 </select>
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
                   onClick={() => setAddOpen(false)}
-                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
+                  className="rounded-lg border border-[var(--border)]/20 px-4 py-2 text-sm text-[var(--foreground)] transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-[var(--foreground)] disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>

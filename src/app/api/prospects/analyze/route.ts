@@ -33,21 +33,21 @@ const CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se', 'upplysning.se'];
 /** Kataloger som kräver exakt domän/org.nr-match för "Finns på" */
 const STRICT_CATALOG_DOMAINS = ['hitta.se', 'eniro.se', 'merinfo.se'];
 
-/** Svenska leadtjänster med beräknat månadspris (kr) – uppskattning */
-const LEAD_SERVICES: { domain: string; name: string; estimatedMonthly?: number }[] = [
-  { domain: 'flytta.se', name: 'flytta.se', estimatedMonthly: 1990 },
-  { domain: 'allaflyttfirmor.se', name: 'allaflyttfirmor.se', estimatedMonthly: 1490 },
-  { domain: 'reco.se', name: 'reco.se', estimatedMonthly: 990 },
-  { domain: 'hittaproffs.se', name: 'hittaproffs.se', estimatedMonthly: 1190 },
-  { domain: 'mittanbud.se', name: 'mittanbud.se', estimatedMonthly: 1290 },
-  { domain: 'buildingpartner.se', name: 'buildingpartner.se', estimatedMonthly: 990 },
-  { domain: 'offerta.se', name: 'offerta.se', estimatedMonthly: 1590 },
-  { domain: 'servicefinder.se', name: 'servicefinder.se', estimatedMonthly: 1390 },
-  { domain: 'städa.se', name: 'städa.se', estimatedMonthly: 990 },
-  { domain: 'stada.se', name: 'städa.se', estimatedMonthly: 990 },
-  { domain: 'hittahem.se', name: 'hittahem.se', estimatedMonthly: 1190 },
-  { domain: 'kk.se', name: 'kk.se', estimatedMonthly: 790 },
-  { domain: 'taskrunner.se', name: 'taskrunner.se', estimatedMonthly: 890 },
+/** Svenska leadtjänster och kataloger (utan prisuppgifter) */
+const LEAD_SERVICES: { domain: string; name: string }[] = [
+  { domain: 'flytta.se', name: 'flytta.se' },
+  { domain: 'allaflyttfirmor.se', name: 'allaflyttfirmor.se' },
+  { domain: 'reco.se', name: 'reco.se' },
+  { domain: 'hittaproffs.se', name: 'hittaproffs.se' },
+  { domain: 'mittanbud.se', name: 'mittanbud.se' },
+  { domain: 'buildingpartner.se', name: 'buildingpartner.se' },
+  { domain: 'offerta.se', name: 'offerta.se' },
+  { domain: 'servicefinder.se', name: 'servicefinder.se' },
+  { domain: 'städa.se', name: 'städa.se' },
+  { domain: 'stada.se', name: 'städa.se' },
+  { domain: 'hittahem.se', name: 'hittahem.se' },
+  { domain: 'kk.se', name: 'kk.se' },
+  { domain: 'taskrunner.se', name: 'taskrunner.se' },
 ];
 
 function isBlockedDomain(link: string): boolean {
@@ -82,13 +82,13 @@ function parseSerpForCompany(
   poor_seo: boolean;
   pays_catalog: boolean;
   buys_leads: boolean;
-  buys_leads_sites: { site: string; estimatedMonthly?: number }[];
+  buys_leads_sites: string[];
   catalog_presence: string[];
   name_rank: number | null;
 } {
   let poor_seo = true;
   let pays_catalog = false;
-  const buysLeadsSites = new Map<string, number | undefined>();
+  const buysLeadsSites = new Set<string>();
   const catalogFound = new Set<string>();
 
   for (let i = 0; i < nameResults.length; i++) {
@@ -127,17 +127,14 @@ function parseSerpForCompany(
     }
 
     for (const svc of LEAD_SERVICES) {
-      if (d.includes(svc.domain) && !buysLeadsSites.has(svc.name)) {
-        buysLeadsSites.set(svc.name, svc.estimatedMonthly);
+      if (d.includes(svc.domain)) {
+        buysLeadsSites.add(svc.name);
       }
     }
   }
 
   const buys_leads = buysLeadsSites.size > 0;
-  const buys_leads_sites = Array.from(buysLeadsSites.entries()).map(([site, est]) => ({
-    site,
-    estimatedMonthly: est,
-  }));
+  const buys_leads_sites = Array.from(buysLeadsSites);
 
   const rankIdx = nameResults.findIndex((x) => {
     const d = x.link ? getDomain(x.link) : null;
@@ -300,7 +297,7 @@ export async function POST(request: Request) {
               poor_seo: false,
               pays_catalog: false,
               buys_leads: false,
-              buys_leads_sites: [] as { site: string; estimatedMonthly?: number }[],
+              buys_leads_sites: [] as string[],
               catalog_presence: [] as string[],
               name_rank: null as number | null,
             };

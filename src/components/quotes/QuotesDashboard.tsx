@@ -31,7 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-white/10 text-[#94a3b8]',
+  draft: 'bg-white/10 text-[var(--muted-foreground)]',
   sent: 'bg-blue-500/20 text-blue-400',
   opened: 'bg-amber-500/20 text-amber-400',
   signed: 'bg-emerald-500/20 text-emerald-400',
@@ -213,7 +213,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-[#94a3b8]">Laddar offerter…</p>
+        <p className="text-[var(--muted-foreground)]">Laddar offerter…</p>
       </div>
     );
   }
@@ -224,37 +224,37 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
+          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150"
         >
           + Skapa ny offert
         </button>
       </div>
 
       {quotes.length === 0 ? (
-        <div className="glass-card rounded-xl p-20 text-center">
-          <p className="text-lg text-[#94a3b8]">Inga offerter ännu. Skapa din första offert ovan.</p>
+        <div className="card rounded-xl p-20 text-center">
+          <p className="text-lg text-[var(--muted-foreground)]">Inga offerter ännu. Skapa din första offert ovan.</p>
         </div>
       ) : (
-        <div className="glass-card overflow-hidden rounded-xl">
+        <div className="card overflow-hidden rounded-xl">
           <table className="min-w-full">
             <thead>
               <tr>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   ID
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Datum
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Kund
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Belopp
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Status
                 </th>
-                <th className="border-b border-white/[0.06] px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                   Åtgärd
                 </th>
               </tr>
@@ -264,18 +264,18 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                 const customer = q.customers;
                 const customerName = customer?.name ?? '—';
                 return (
-                  <tr key={q.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
-                    <td className="whitespace-nowrap px-6 py-5 font-mono text-sm text-white">
+                  <tr key={q.id} className="table-row-hover border-b border-[var(--border)]/[0.04] transition-colors duration-150">
+                    <td className="whitespace-nowrap px-6 py-5 font-mono text-sm text-[var(--foreground)]">
                       #{q.id.slice(0, 8)}
                     </td>
-                    <td className="px-6 py-5 text-sm text-[#94a3b8]">{formatDate(q.created_at)}</td>
-                    <td className="px-6 py-5 font-medium text-white">{customerName}</td>
-                    <td className="px-6 py-5 text-[#94a3b8]">
+                    <td className="px-6 py-5 text-sm text-[var(--muted-foreground)]">{formatDate(q.created_at)}</td>
+                    <td className="px-6 py-5 font-medium text-[var(--foreground)]">{customerName}</td>
+                    <td className="px-6 py-5 text-[var(--muted-foreground)]">
                       {formatCurrency(q.total_amount ?? 0)}
                     </td>
                     <td className="px-6 py-5">
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[q.status] ?? 'bg-white/10 text-[#94a3b8]'}`}
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[q.status] ?? 'bg-white/10 text-[var(--muted-foreground)]'}`}
                       >
                         {STATUS_LABELS[q.status] ?? q.status}
                       </span>
@@ -329,19 +329,19 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
 
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="glass-card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border-white/20 p-6">
-            <h3 className="font-heading text-xl font-semibold text-white">Ny offert</h3>
+          <div className="card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border-[var(--border)]/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-[var(--foreground)]">Ny offert</h3>
             <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
+                    <option key={c.id} value={c.id} className="bg-[var(--card)] text-[var(--foreground)]">
                       {c.name}
                     </option>
                   ))}
@@ -350,7 +350,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-[#94a3b8]">Tjänster</label>
+                  <label className="block text-sm font-medium text-[var(--muted-foreground)]">Tjänster</label>
                   <button
                     type="button"
                     onClick={addService}
@@ -367,7 +367,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                         placeholder="Tjänst (t.ex. Hemsida)"
                         value={s.name}
                         onChange={(e) => updateService(i, 'name', e.target.value)}
-                        className="flex-1 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                        className="flex-1 rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <input
                         type="number"
@@ -378,12 +378,12 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                         onChange={(e) =>
                           updateService(i, 'price', parseFloat(e.target.value) || 0)
                         }
-                        className="w-28 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                        className="w-28 rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
                       <button
                         type="button"
                         onClick={() => removeService(i)}
-                        className="rounded-lg border border-white/20 px-2 text-[#94a3b8] transition-all duration-150 hover:bg-white/5"
+                        className="rounded-lg border border-[var(--border)]/20 px-2 text-[var(--muted-foreground)] transition-all duration-150 hover:bg-white/5"
                       >
                         ×
                       </button>
@@ -392,9 +392,9 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <p className="text-sm text-[#94a3b8]">Totalsumma</p>
-                <p className="font-heading text-xl font-semibold text-white">
+              <div className="rounded-lg border border-[var(--border)]/10 bg-white/5 p-4">
+                <p className="text-sm text-[var(--muted-foreground)]">Totalsumma</p>
+                <p className="font-heading text-xl font-semibold text-[var(--foreground)]">
                   {formatCurrency(totalAmount)}
                 </p>
               </div>
@@ -403,14 +403,14 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
                 <button
                   type="button"
                   onClick={() => setCreateOpen(false)}
-                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
+                  className="rounded-lg border border-[var(--border)]/20 px-4 py-2 text-sm text-[var(--foreground)] transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-[var(--foreground)] disabled:opacity-50"
                 >
                   {submitting ? 'Skapar…' : 'Skapa offert'}
                 </button>

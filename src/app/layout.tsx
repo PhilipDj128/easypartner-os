@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans, DM_Sans } from 'next/font/google';
-import { ConditionalNav } from '@/components/ConditionalNav';
+import { LayoutShell } from '@/components/LayoutShell';
 import './globals.css';
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -31,9 +31,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className="min-h-screen bg-[#0a0f1e] text-white antialiased font-[var(--font-body)]">
-        <ConditionalNav />
-        <main className="pt-16 lg:pl-64 lg:pt-0">{children}</main>
+      <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased font-[var(--font-body)]">
+        <LayoutShell>{children}</LayoutShell>
       </body>
     </html>
   );

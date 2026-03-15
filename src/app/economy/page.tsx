@@ -11,13 +11,11 @@ export default async function EconomyPage() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-10 lg:px-10 lg:py-12 animate-fade-in">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="mb-10 font-heading text-3xl font-semibold text-white">
-          Ekonomidashboard
-        </h1>
-        <EconomyDashboard customers={customers} />
-      </div>
+    <div className="mx-auto max-w-6xl animate-fade-in">
+      <h1 className="mb-8 font-heading text-3xl font-semibold text-[var(--foreground)]">
+        Ekonomidashboard
+      </h1>
+      <EconomyDashboard customers={customers} />
     </div>
   );
 }

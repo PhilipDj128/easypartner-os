@@ -178,15 +178,15 @@ export function SEODashboard({
     <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-sm font-medium text-[#94a3b8]">Välj kund</label>
+          <label className="block text-sm font-medium text-[var(--muted-foreground)]">Välj kund</label>
           <select
             value={selectedCustomerId}
             onChange={(e) => setSelectedCustomerId(e.target.value)}
-            className="mt-1 min-w-[200px] rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+            className="mt-1 min-w-[200px] rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="">— Välj kund —</option>
             {customers.map((c) => (
-              <option key={c.id} value={c.id} className="bg-[#111827] text-white">
+              <option key={c.id} value={c.id} className="bg-[var(--card)] text-[var(--foreground)]">
                 {c.name}
               </option>
             ))}
@@ -196,7 +196,7 @@ export function SEODashboard({
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-white transition-all duration-150"
+            className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150"
           >
             + Lägg till sökord
           </button>
@@ -204,7 +204,7 @@ export function SEODashboard({
             type="button"
             onClick={handleUpdateRankings}
             disabled={updating || !selectedCustomerId || rankings.length === 0}
-            className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-[var(--border)]/20 px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
           >
             {updating ? 'Uppdaterar…' : 'Uppdatera ranking'}
           </button>
@@ -212,7 +212,7 @@ export function SEODashboard({
             type="button"
             onClick={handleAnalyzeAI}
             disabled={optimizing || !selectedCustomerId || rankings.length === 0}
-            className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-medium text-white transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-[var(--border)]/20 px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150 hover:bg-white/5 disabled:opacity-50"
           >
             {optimizing ? 'Analyserar…' : 'Analysera med AI'}
           </button>
@@ -222,52 +222,52 @@ export function SEODashboard({
       {selectedCustomerId && (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
-              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
+            <div className="card rounded-xl p-5 transition-all duration-150 hover:border-[var(--border)]/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                 I topp 3
               </p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top3}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-[var(--foreground)]">{top3}</p>
             </div>
-            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
-              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
+            <div className="card rounded-xl p-5 transition-all duration-150 hover:border-[var(--border)]/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                 I topp 10
               </p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top10}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-[var(--foreground)]">{top10}</p>
             </div>
-            <div className="glass-card rounded-xl p-5 transition-all duration-150 hover:border-white/[0.12]">
-              <p className="text-sm font-medium uppercase tracking-wider text-[#94a3b8]">
+            <div className="card rounded-xl p-5 transition-all duration-150 hover:border-[var(--border)]/[0.12]">
+              <p className="text-sm font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                 I topp 30
               </p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-white">{top30}</p>
+              <p className="mt-2 font-heading text-2xl font-semibold text-[var(--foreground)]">{top30}</p>
             </div>
           </div>
 
           {loading ? (
             <div className="flex justify-center py-12">
-              <p className="text-[#94a3b8]">Laddar sökord…</p>
+              <p className="text-[var(--muted-foreground)]">Laddar sökord…</p>
             </div>
           ) : rankings.length === 0 ? (
-            <div className="glass-card rounded-xl p-12 text-center">
-              <p className="text-[#94a3b8]">Inga bevakade sökord. Lägg till sökord ovan.</p>
+            <div className="card rounded-xl p-12 text-center">
+              <p className="text-[var(--muted-foreground)]">Inga bevakade sökord. Lägg till sökord ovan.</p>
             </div>
           ) : (
-            <div className="glass-card overflow-hidden rounded-xl">
+            <div className="card overflow-hidden rounded-xl">
               <table className="min-w-full">
                 <thead>
                   <tr>
-                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                    <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                       Sökord
                     </th>
-                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                    <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                       Position idag
                     </th>
-                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                    <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                       Position förra veckan
                     </th>
-                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                    <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                       Trend
                     </th>
-                    <th className="border-b border-white/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[#94a3b8]">
+                    <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
                       Sökvolym
                     </th>
                   </tr>
@@ -276,12 +276,12 @@ export function SEODashboard({
                   {rankings.map((r) => {
                     const trend = getTrend(r.position, r.previous_position);
                     return (
-                      <tr key={r.id} className="table-row-hover border-b border-white/[0.04] transition-colors duration-150">
-                        <td className="px-6 py-5 font-medium text-white">{r.keyword}</td>
-                        <td className="px-6 py-5 text-[#94a3b8]">
+                      <tr key={r.id} className="table-row-hover border-b border-[var(--border)]/[0.04] transition-colors duration-150">
+                        <td className="px-6 py-5 font-medium text-[var(--foreground)]">{r.keyword}</td>
+                        <td className="px-6 py-5 text-[var(--muted-foreground)]">
                           {r.position ?? '—'}
                         </td>
-                        <td className="px-6 py-5 text-[#94a3b8]">
+                        <td className="px-6 py-5 text-[var(--muted-foreground)]">
                           {r.previous_position ?? '—'}
                         </td>
                         <td className="px-6 py-5">
@@ -295,7 +295,7 @@ export function SEODashboard({
                             <span className="text-[#64748b]" title="Oförändrad">→</span>
                           )}
                         </td>
-                        <td className="px-6 py-5 text-[#94a3b8]">
+                        <td className="px-6 py-5 text-[var(--muted-foreground)]">
                           {r.search_volume != null
                             ? r.search_volume.toLocaleString('sv-SE')
                             : '—'}
@@ -311,67 +311,67 @@ export function SEODashboard({
       )}
 
       {!selectedCustomerId && (
-        <div className="glass-card rounded-xl p-12 text-center">
-          <p className="text-[#94a3b8]">Välj en kund för att se bevakade sökord.</p>
+        <div className="card rounded-xl p-12 text-center">
+          <p className="text-[var(--muted-foreground)]">Välj en kund för att se bevakade sökord.</p>
         </div>
       )}
 
       {addOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-md rounded-xl border-white/20 p-6">
-            <h3 className="font-heading text-xl font-semibold text-white">Nytt bevakat sökord</h3>
+          <div className="card w-full max-w-md rounded-xl border-[var(--border)]/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-[var(--foreground)]">Nytt bevakat sökord</h3>
             <form onSubmit={handleAddSubmit} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Kund *</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Kund *</label>
                 <select
                   name="customer_id"
                   required
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="">— Välj kund —</option>
                   {customers.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#111827] text-white">
+                    <option key={c.id} value={c.id} className="bg-[var(--card)] text-[var(--foreground)]">
                       {c.name}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Domän</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Domän</label>
                 <select
                   name="domain"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="">— Välj domän —</option>
                   {domains.map((d) => (
-                    <option key={d.id} value={d.domain} className="bg-[#111827] text-white">
+                    <option key={d.id} value={d.domain} className="bg-[var(--card)] text-[var(--foreground)]">
                       {d.domain}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#94a3b8]">Sökord *</label>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Sökord *</label>
                 <input
                   type="text"
                   name="keyword"
                   required
                   placeholder="t.ex. webbhotell stockholm"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-white placeholder:text-[#94a3b8] focus:border-[#3b82f6] focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
+                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-4">
                 <button
                   type="button"
                   onClick={() => setAddOpen(false)}
-                  className="rounded-lg border border-white/20 px-4 py-2 text-sm text-white transition-all duration-150 hover:bg-white/5"
+                  className="rounded-lg border border-[var(--border)]/20 px-4 py-2 text-sm text-[var(--foreground)] transition-all duration-150 hover:bg-white/5"
                 >
                   Avbryt
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn-primary rounded-lg px-4 py-2 text-sm text-white disabled:opacity-50"
+                  className="btn-primary rounded-lg px-4 py-2 text-sm text-[var(--foreground)] disabled:opacity-50"
                 >
                   {submitting ? 'Sparar…' : 'Spara'}
                 </button>
@@ -383,20 +383,20 @@ export function SEODashboard({
 
       {suggestionsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="glass-card max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border-white/20 p-6">
-            <h3 className="font-heading text-xl font-semibold text-white">Claudes SEO-förslag</h3>
+          <div className="card max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border-[var(--border)]/20 p-6">
+            <h3 className="font-heading text-xl font-semibold text-[var(--foreground)]">Claudes SEO-förslag</h3>
             <div className="mt-6 space-y-4">
               <div>
-                <p className="text-sm font-medium text-[#94a3b8]">Ny meta-titel</p>
-                <p className="mt-1 rounded-lg border border-white/10 bg-white/5 p-3 text-white">{suggestionsModal.meta_title || '—'}</p>
+                <p className="text-sm font-medium text-[var(--muted-foreground)]">Ny meta-titel</p>
+                <p className="mt-1 rounded-lg border border-[var(--border)]/10 bg-white/5 p-3 text-[var(--foreground)]">{suggestionsModal.meta_title || '—'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-[#94a3b8]">Ny meta-beskrivning</p>
-                <p className="mt-1 rounded-lg border border-white/10 bg-white/5 p-3 text-white">{suggestionsModal.meta_description || '—'}</p>
+                <p className="text-sm font-medium text-[var(--muted-foreground)]">Ny meta-beskrivning</p>
+                <p className="mt-1 rounded-lg border border-[var(--border)]/10 bg-white/5 p-3 text-[var(--foreground)]">{suggestionsModal.meta_description || '—'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-[#94a3b8]">Innehållsförslag</p>
-                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-[#94a3b8]">
+                <p className="text-sm font-medium text-[var(--muted-foreground)]">Innehållsförslag</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-[var(--border)]/10 bg-white/5 p-3 text-[var(--muted-foreground)]">
                   {suggestionsModal.content_suggestions?.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -404,8 +404,8 @@ export function SEODashboard({
                 </ul>
               </div>
               <div>
-                <p className="text-sm font-medium text-[#94a3b8]">Tekniska åtgärder</p>
-                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-[#94a3b8]">
+                <p className="text-sm font-medium text-[var(--muted-foreground)]">Tekniska åtgärder</p>
+                <ul className="mt-1 list-inside list-disc space-y-1 rounded-lg border border-[var(--border)]/10 bg-white/5 p-3 text-[var(--muted-foreground)]">
                   {suggestionsModal.technical_actions?.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -417,7 +417,7 @@ export function SEODashboard({
               <button
                 type="button"
                 onClick={() => setSuggestionsModal(null)}
-                className="btn-primary rounded-lg px-4 py-2 text-sm text-white"
+                className="btn-primary rounded-lg px-4 py-2 text-sm text-[var(--foreground)]"
               >
                 Stäng
               </button>

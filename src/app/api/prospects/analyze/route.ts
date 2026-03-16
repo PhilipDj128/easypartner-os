@@ -219,9 +219,10 @@ export async function POST(request: Request) {
         const body = await request.json().catch(() => ({}));
         const industry = (body.industry || '').toString().trim() || 'företag';
         const city = (body.city || '').toString().trim() || 'Sverige';
+        const saveToDb = body.save_to_db !== false;
 
         const supabase = getSupabaseAdmin();
-        if (!supabase) {
+        if (!supabase && saveToDb) {
           send({ type: 'error', message: 'Supabase inte konfigurerad' });
           controller.close();
           return;
@@ -537,23 +538,25 @@ export async function POST(request: Request) {
             sales_pitch: sales_pitch || null,
           };
 
-          try {
-            await supabase.from('leads').insert({
-              company_name: lead.company_name,
-              website: lead.website,
-              contact_email: lead.contact_email,
-              contact_phone: lead.contact_phone,
-              score: lead.score,
-              issues: lead.issues,
-              built_by: lead.built_by,
-              runs_ads: lead.runs_ads,
-              poor_seo: lead.poor_seo,
-              slow_site: lead.slow_site,
-              status: 'new',
-              notes: lead.sales_pitch,
-            });
-          } catch (err) {
-            console.error('[prospects/analyze] insert lead', err);
+          if (saveToDb && supabase) {
+            try {
+              await supabase.from('leads').insert({
+                company_name: lead.company_name,
+                website: lead.website,
+                contact_email: lead.contact_email,
+                contact_phone: lead.contact_phone,
+                score: lead.score,
+                issues: lead.issues,
+                built_by: lead.built_by,
+                runs_ads: lead.runs_ads,
+                poor_seo: lead.poor_seo,
+                slow_site: lead.slow_site,
+                status: 'new',
+                notes: lead.sales_pitch,
+              });
+            } catch (err) {
+              console.error('[prospects/analyze] insert lead', err);
+            }
           }
 
           savedLeads.push(lead);

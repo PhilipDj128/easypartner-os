@@ -7,7 +7,7 @@ import { KPICard } from '@/components/ui/KPICard';
 
 interface DashboardData {
   todos: { type: string; text: string; href: string }[];
-  stats: { activeCustomers: number; thisMonthRevenue: number; openQuotes: number; newLeads: number };
+  stats: { activeCustomers: number; thisMonthRevenue: number; openQuotes: number; newLeads: number; nightlyLeads?: number };
   leads: { id: string; company_name?: string; website?: string; score?: number }[];
   reminders: { id: string; message?: string; due_date?: string; type?: string }[];
 }
@@ -50,7 +50,12 @@ export function DashboardClient() {
     );
   }
 
-  const { todos = [], stats = {} as { activeCustomers?: number; thisMonthRevenue?: number; openQuotes?: number; newLeads?: number }, leads = [], reminders = [] } = data ?? {};
+  const {
+    todos = [],
+    stats = {} as { activeCustomers?: number; thisMonthRevenue?: number; openQuotes?: number; newLeads?: number; nightlyLeads?: number },
+    leads = [],
+    reminders = [],
+  } = data ?? {};
   const kpis: { label: string; value: string | number; trend: 'up' | 'neutral' | 'down'; icon?: React.ReactNode }[] = [
     { label: 'Aktiva kunder', value: stats.activeCustomers ?? 0, trend: 'up', icon: <TrendingUp className="h-4 w-4" /> },
     { label: 'Omsättning denna månad', value: formatCurrency(stats.thisMonthRevenue ?? 0), trend: 'up', icon: <TrendingUp className="h-4 w-4" /> },
@@ -66,6 +71,21 @@ export function DashboardClient() {
           Hej {userName}!
         </h1>
       </div>
+
+      {stats.nightlyLeads && stats.nightlyLeads > 0 && (
+        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-xs text-[var(--muted-foreground)]">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <button
+            type="button"
+            className="underline-offset-2 hover:underline"
+            onClick={() => {
+              window.location.href = '/prospektering?source=auto-nightly';
+            }}
+          >
+            Nytt från natten: {stats.nightlyLeads} leads
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi, i) => (

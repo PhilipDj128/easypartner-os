@@ -26,12 +26,30 @@ export async function GET() {
     const { data: revenue } = await supabase.from('revenue').select('amount, month, year, created_at');
     let newLeadsCount = 0;
     let leadList: unknown[] = [];
+    let nightlyLeadsCount = 0;
     try {
-      const leadsRes = await supabase.from('leads').select('*', { count: 'exact' }).eq('status', 'new').order('created_at', { ascending: false }).limit(5);
+      const leadsRes = await supabase
+        .from('leads')
+        .select('*', { count: 'exact' })
+        .eq('status', 'new')
+        .order('created_at', { ascending: false })
+        .limit(5);
       leadList = leadsRes.data ?? [];
       newLeadsCount = leadsRes.count ?? leadList.length;
     } catch {
       // leads-tabellen kanske saknas
+    }
+    try {
+      const nightlyStart = new Date(today);
+      nightlyStart.setHours(0, 0, 0, 0);
+      const { count: nightlyCount } = await supabase
+        .from('leads')
+        .select('id', { count: 'exact' })
+        .eq('source', 'auto-nightly')
+        .gte('created_at', nightlyStart.toISOString());
+      nightlyLeadsCount = nightlyCount ?? 0;
+    } catch {
+      // kolumnen source eller leads-tabellen kan saknas
     }
     let reminderList: unknown[] = [];
     try {
@@ -81,7 +99,7 @@ export async function GET() {
 
     return NextResponse.json({
       todos,
-      stats: { activeCustomers, thisMonthRevenue, openQuotes, newLeads },
+      stats: { activeCustomers, thisMonthRevenue, openQuotes, newLeads, nightlyLeads: nightlyLeadsCount },
       leads: leadList,
       reminders: reminderList,
     });

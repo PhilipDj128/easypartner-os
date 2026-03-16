@@ -14,11 +14,16 @@ import {
   ChevronRight,
   Search as SearchIcon,
 } from 'lucide-react';
+import { ChatNavItem } from './ChatNavItem';
+import { ChatNotificationProvider } from './ChatNotificationProvider';
 
 const NAV_GROUPS = [
   {
     label: 'Dashboards',
-    items: [{ href: '/', label: 'Dashboard', Icon: LayoutDashboard }],
+    items: [
+      { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
+      { href: '/chat', label: 'Chatt', Icon: null },
+    ],
   },
   {
     label: 'Försäljning',
@@ -43,6 +48,7 @@ const NAV_GROUPS = [
 
 const PAGE_NAMES: Record<string, string> = {
   '/': 'Dashboard',
+  '/chat': 'Chatt',
   '/customers': 'Kunder',
   '/economy': 'Ekonomi',
   '/quotes': 'Offerter',
@@ -63,6 +69,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
 
   return (
+    <>
+      <ChatNotificationProvider />
     <div
       className="min-h-screen"
       style={{
@@ -100,6 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </p>
               <ul className="space-y-0.5 px-3">
                 {group.items.map((item) => {
+                  if (item.href === '/chat') return <ChatNavItem key={item.href} />;
                   const isActive =
                     pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                   return (
@@ -112,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                         }`}
                       >
-                        <item.Icon className="h-4 w-4 shrink-0" />
+                        {item.Icon && <item.Icon className="h-4 w-4 shrink-0" />}
                         {item.label}
                       </Link>
                     </li>
@@ -197,5 +206,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="p-6 lg:p-8">{children}</main>
       </div>
     </div>
+    </>
   );
 }

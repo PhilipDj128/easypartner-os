@@ -29,14 +29,20 @@ export async function GET(
 
   const customer = (quote as { customers?: { name: string; company: string | null } | null }).customers;
   const services = Array.isArray(quote.services) ? quote.services : [];
+  const lineItems = Array.isArray(quote.line_items) ? quote.line_items : [];
+  const recipientName = (quote as { recipient_name?: string }).recipient_name;
 
   const pdfElement = React.createElement(QuotePDF, {
     quoteId: quote.id,
+    quoteNumber: (quote as { quote_number?: string }).quote_number,
     createdAt: quote.created_at,
-    customerName: customer?.name ?? 'Kund',
+    customerName: (recipientName || customer?.name) ?? 'Kund',
     customerCompany: customer?.company ?? null,
     services,
+    lineItems,
     totalAmount: Number(quote.total_amount) || 0,
+    validUntil: (quote as { valid_until?: string }).valid_until,
+    notes: (quote as { notes?: string }).notes,
   });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -31,6 +31,28 @@ export async function GET() {
   }
 }
 
+async function generateQuoteNumber(supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `EP-${year}-`;
+  try {
+    const { data } = await supabase
+      .from('quotes')
+      .select('quote_number')
+      .not('quote_number', 'is', null)
+      .like('quote_number', `${prefix}%`)
+      .order('quote_number', { ascending: false })
+      .limit(1);
+    const last = (data && data[0]) as { quote_number?: string } | undefined;
+    const lastNum = last?.quote_number
+      ? parseInt(last.quote_number.replace(prefix, ''), 10)
+      : 0;
+    const next = String(lastNum + 1).padStart(3, '0');
+    return `${prefix}${next}`;
+  } catch {
+    return `${prefix}001`;
+  }
+}
+
 export async function POST(request: Request) {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
@@ -38,21 +60,45 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json();
-    const services = Array.isArray(body.services) ? body.services : [];
-    const totalAmount = services.reduce((sum: number, s: { price?: number }) => sum + (Number(s?.price) || 0), 0);
+    const lineItems = body.line_items != null ? body.line_items : [];
+    const oneTimeCost = Number(body.one_time_cost) || 0;
+    const monthlyCost = Number(body.monthly_cost) || 0;
+    const totalAmount =
+      Number(body.total_amount) ||
+      (oneTimeCost + monthlyCost) ||
+      (Array.isArray(body.services)
+        ? (body.services as { price?: number }[]).reduce((s, i) => s + (Number(i?.price) || 0), 0)
+        : 0);
+
+    const quoteNumber =
+      (body.quote_number && String(body.quote_number).trim()) ||
+      (await generateQuoteNumber(supabase));
+
+    const insertPayload: Record<string, unknown> = {
+      customer_id: body.customer_id || null,
+      quote_number: quoteNumber,
+      line_items: Array.isArray(lineItems) ? lineItems : [],
+      one_time_cost: oneTimeCost,
+      monthly_cost: monthlyCost,
+      binding_period: body.binding_period || null,
+      contract_period: body.contract_period || null,
+      total_amount: totalAmount,
+      status: 'draft',
+      valid_until: body.valid_until || null,
+      notes: body.notes || null,
+      recipient_name: body.recipient_name || null,
+      recipient_email: body.recipient_email || null,
+    };
+    if (Array.isArray(body.services) && body.services.length) {
+      (insertPayload as Record<string, unknown>).services = body.services;
+    }
 
     const { data, error } = await supabase
       .from('quotes')
-      .insert({
-        customer_id: body.customer_id || null,
-        services,
-        total_amount: totalAmount,
-        status: 'draft',
-        valid_until: body.valid_until || null,
-      })
+      .insert(insertPayload)
       .select(`
         *,
-        customers (id, name, company, email)
+        customers (id, name, company, email, phone)
       `)
       .single();
 

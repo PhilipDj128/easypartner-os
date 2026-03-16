@@ -2,19 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface QuoteService {
-  name: string;
-  price: number;
-}
+import Link from 'next/link';
 
 interface Quote {
   id: string;
+  quote_number: string | null;
   created_at: string;
-  customer_id: string | null;
-  services: QuoteService[];
-  total_amount: number;
+  sent_at: string | null;
+  opened_at: string | null;
   status: string;
+  total_amount: number;
+  valid_until: string | null;
+  recipient_name: string | null;
+  recipient_email: string | null;
+  sign_token: string | null;
   customers?: { id: string; name: string; company: string | null; email: string | null } | null;
 }
 
@@ -27,14 +28,18 @@ const STATUS_LABELS: Record<string, string> = {
   draft: 'Utkast',
   sent: 'Skickad',
   opened: 'Öppnad',
+  signerad: 'Signerad',
   signed: 'Signerad',
+  declined: 'Avböjd',
 };
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-white/10 text-[var(--muted-foreground)]',
   sent: 'bg-blue-500/20 text-blue-400',
   opened: 'bg-amber-500/20 text-amber-400',
+  signerad: 'bg-emerald-500/20 text-emerald-400',
   signed: 'bg-emerald-500/20 text-emerald-400',
+  declined: 'bg-red-500/20 text-red-400',
 };
 
 function formatCurrency(value: number) {
@@ -45,7 +50,8 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-function formatDate(iso: string) {
+function formatDate(iso: string | null) {
+  if (!iso) return '—';
   return new Date(iso).toLocaleDateString('sv-SE', {
     year: 'numeric',
     month: 'short',
@@ -57,10 +63,7 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
-  const [services, setServices] = useState<QuoteService[]>([{ name: '', price: 0 }]);
+  const [remindingId, setRemindingId] = useState<string | null>(null);
 
   const fetchQuotes = async () => {
     try {
@@ -80,134 +83,40 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
     fetchQuotes();
   }, []);
 
-  const totalAmount = services.reduce((sum, s) => sum + (Number(s.price) || 0), 0);
-
-  const addService = () => setServices((p) => [...p, { name: '', price: 0 }]);
-
-  const updateService = (i: number, field: 'name' | 'price', value: string | number) => {
-    setServices((p) =>
-      p.map((s, j) => (j === i ? { ...s, [field]: value } : s))
-    );
-  };
-
-  const removeService = (i: number) => {
-    if (services.length > 1) setServices((p) => p.filter((_, j) => j !== i));
-  };
-
-  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const fd = new FormData(form);
-    const customerId = (fd.get('customer_id') as string) || null;
-    if (!customerId) {
-      alert('Välj en kund');
+  const sendReminder = async (q: Quote) => {
+    const email = q.recipient_email || (q.customers as { email?: string })?.email;
+    if (!email?.includes('@')) {
+      alert('Ingen e-postadress för mottagaren.');
       return;
     }
-    const validServices = services
-      .filter((s) => s.name.trim())
-      .map((s) => ({ name: s.name.trim(), price: Number(s.price) || 0 }));
-    if (validServices.length === 0) {
-      alert('Lägg till minst en tjänst');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customer_id: customerId,
-          services: validServices,
-        }),
-      });
-      if (res.ok) {
-        setCreateOpen(false);
-        setServices([{ name: '', price: 0 }]);
-        form.reset();
-        await fetchQuotes();
-        router.refresh();
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Kunde inte skapa offert');
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const sendQuoteEmail = async (q: Quote) => {
-    const email = q.customers?.email;
-    if (!email) {
-      alert('Kunden har ingen e-postadress. Lägg till e-post på kundprofilen.');
-      return;
-    }
-    setSendingEmailId(q.id);
+    setRemindingId(q.id);
     try {
       const res = await fetch('/api/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'send_quote',
+          action: 'quote_reminder',
           to: email,
-          customerName: q.customers?.name,
-          services: q.services ?? [],
-          totalAmount: q.total_amount ?? 0,
+          customerName: q.recipient_name || (q.customers as { name?: string })?.name,
         }),
       });
       if (res.ok) {
-        await fetchQuotes();
         router.refresh();
+        await fetchQuotes();
       } else {
         const err = await res.json();
-        alert(err.error || 'Kunde inte skicka');
+        alert(err.error || 'Kunde inte skicka påminnelse');
       }
     } finally {
-      setSendingEmailId(null);
+      setRemindingId(null);
     }
   };
 
-  const markAsSent = async (id: string) => {
-    try {
-      const res = await fetch(`/api/quotes/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'sent' }),
-      });
-      if (res.ok) {
-        await fetchQuotes();
-        router.refresh();
-      }
-    } catch {
-      alert('Kunde inte uppdatera');
-    }
-  };
-
-  const markAsSigned = async (q: Quote) => {
-    try {
-      const res = await fetch(`/api/quotes/${q.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'signed' }),
-      });
-      if (res.ok) {
-        const email = q.customers?.email;
-        if (email) {
-          await fetch('/api/email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'quote_signed',
-              to: email,
-              customerName: q.customers?.name,
-            }),
-          });
-        }
-        await fetchQuotes();
-        router.refresh();
-      }
-    } catch {
-      alert('Kunde inte uppdatera');
-    }
+  const canRemind = (q: Quote) => {
+    if (q.status !== 'sent' || !q.sent_at) return false;
+    const sent = new Date(q.sent_at).getTime();
+    const twoDaysAgo = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    return sent < twoDaysAgo;
   };
 
   if (loading) {
@@ -219,203 +128,127 @@ export function QuotesDashboard({ customers }: { customers: Customer[] }) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition-all duration-150"
-        >
-          + Skapa ny offert
-        </button>
+        <Link href="/quotes/new" className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium">
+          + Ny offert
+        </Link>
       </div>
 
       {quotes.length === 0 ? (
         <div className="card rounded-xl p-20 text-center">
-          <p className="text-lg text-[var(--muted-foreground)]">Inga offerter ännu. Skapa din första offert ovan.</p>
+          <p className="text-lg text-[var(--muted-foreground)]">
+            Inga offerter ännu. Skapa din första offert ovan.
+          </p>
+          <Link href="/quotes/new" className="mt-4 inline-block text-indigo-400 hover:underline">
+            Skapa offert →
+          </Link>
         </div>
       ) : (
         <div className="card overflow-hidden rounded-xl">
-          <table className="min-w-full">
-            <thead>
-              <tr>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  ID
-                </th>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Datum
-                </th>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Kund
-                </th>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Belopp
-                </th>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Status
-                </th>
-                <th className="border-b border-[var(--border)]/[0.06] px-6 py-5 text-right text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-                  Åtgärd
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotes.map((q) => {
-                const customer = q.customers;
-                const customerName = customer?.name ?? '—';
-                return (
-                  <tr key={q.id} className="table-row-hover border-b border-[var(--border)]/[0.04] transition-colors duration-150">
-                    <td className="whitespace-nowrap px-6 py-5 font-mono text-sm text-[var(--foreground)]">
-                      #{q.id.slice(0, 8)}
-                    </td>
-                    <td className="px-6 py-5 text-sm text-[var(--muted-foreground)]">{formatDate(q.created_at)}</td>
-                    <td className="px-6 py-5 font-medium text-[var(--foreground)]">{customerName}</td>
-                    <td className="px-6 py-5 text-[var(--muted-foreground)]">
-                      {formatCurrency(q.total_amount ?? 0)}
-                    </td>
-                    <td className="px-6 py-5">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[q.status] ?? 'bg-white/10 text-[var(--muted-foreground)]'}`}
-                      >
-                        {STATUS_LABELS[q.status] ?? q.status}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-5 text-right">
-                      <div className="flex justify-end gap-3">
-                        <a
-                          href={`/api/quotes/${q.id}/pdf`}
-                          download={`offert-${q.id.slice(0, 8)}.pdf`}
-                          className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-fixed sm:table-auto">
+              <thead className="table-sticky-header border-b border-[var(--border)] bg-[var(--card)]">
+                <tr>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Offert#
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Kund
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Belopp
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Skickad
+                  </th>
+                  <th className="px-4 py-4 text-left text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Giltig till
+                  </th>
+                  <th className="px-4 py-4 text-right text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+                    Åtgärder
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotes.map((q) => {
+                  const customer = q.customers;
+                  const customerName =
+                    (q.recipient_name || (customer as { name?: string })?.name) ?? '—';
+                  return (
+                    <tr
+                      key={q.id}
+                      className="table-row-hover border-b border-[var(--border)]/50 transition-colors"
+                    >
+                      <td className="whitespace-nowrap px-4 py-4 font-mono text-sm text-[var(--foreground)]">
+                        {q.quote_number || `#${q.id.slice(0, 8)}`}
+                      </td>
+                      <td className="px-4 py-4 font-medium text-[var(--foreground)]">
+                        {customerName}
+                      </td>
+                      <td className="px-4 py-4 text-[var(--muted-foreground)]">
+                        {formatCurrency(q.total_amount ?? 0)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+                            STATUS_COLORS[q.status] ?? 'bg-white/10 text-[var(--muted-foreground)]'
+                          }`}
                         >
-                          Ladda ner PDF
-                        </a>
-                        {q.status === 'draft' && (
-                          <button
-                            type="button"
-                            onClick={() => markAsSent(q.id)}
-                            className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
+                          {STATUS_LABELS[q.status] ?? q.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[var(--muted-foreground)]">
+                        {formatDate(q.sent_at)}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-[var(--muted-foreground)]">
+                        {formatDate(q.valid_until)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/quotes/${q.id}`}
+                            className="text-sm text-indigo-400 hover:underline"
                           >
-                            Markera som skickad
-                          </button>
-                        )}
-                        {(q.status === 'draft' || q.status === 'sent') && (
-                          <button
-                            type="button"
-                            onClick={() => sendQuoteEmail(q)}
-                            disabled={sendingEmailId === q.id}
-                            className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400 disabled:opacity-50"
+                            Visa
+                          </Link>
+                          {q.sign_token && (
+                            <a
+                              href={`/quotes/sign/${q.sign_token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-indigo-400 hover:underline"
+                            >
+                              Signeringslänk
+                            </a>
+                          )}
+                          {canRemind(q) && (
+                            <button
+                              type="button"
+                              onClick={() => sendReminder(q)}
+                              disabled={remindingId === q.id}
+                              className="text-sm text-amber-400 hover:underline disabled:opacity-50"
+                            >
+                              {remindingId === q.id ? 'Skickar…' : 'Påminn'}
+                            </button>
+                          )}
+                          <a
+                            href={`/api/quotes/${q.id}/pdf`}
+                            download={`offert-${q.quote_number || q.id.slice(0, 8)}.pdf`}
+                            className="text-sm text-indigo-400 hover:underline"
                           >
-                            {sendingEmailId === q.id ? 'Skickar…' : 'Skicka via mail'}
-                          </button>
-                        )}
-                        {(q.status === 'sent' || q.status === 'opened') && (
-                          <button
-                            type="button"
-                            onClick={() => markAsSigned(q)}
-                            className="text-sm text-emerald-400 transition-colors duration-150 hover:text-emerald-300"
-                          >
-                            Markera som signerad
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="card max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border-[var(--border)]/20 p-6">
-            <h3 className="font-heading text-xl font-semibold text-[var(--foreground)]">Ny offert</h3>
-            <form onSubmit={handleCreateSubmit} className="mt-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--muted-foreground)]">Kund *</label>
-                <select
-                  name="customer_id"
-                  required
-                  className="mt-1 w-full rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="">— Välj kund —</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[var(--card)] text-[var(--foreground)]">
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-[var(--muted-foreground)]">Tjänster</label>
-                  <button
-                    type="button"
-                    onClick={addService}
-                    className="text-sm text-[#3b82f6] transition-colors duration-150 hover:text-blue-400"
-                  >
-                    + Lägg till
-                  </button>
-                </div>
-                <div className="mt-2 space-y-2">
-                  {services.map((s, i) => (
-                    <div key={i} className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Tjänst (t.ex. Hemsida)"
-                        value={s.name}
-                        onChange={(e) => updateService(i, 'name', e.target.value)}
-                        className="flex-1 rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Pris"
-                        min="0"
-                        step="1"
-                        value={s.price || ''}
-                        onChange={(e) =>
-                          updateService(i, 'price', parseFloat(e.target.value) || 0)
-                        }
-                        className="w-28 rounded-lg border border-[var(--border)]/20 bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeService(i)}
-                        className="rounded-lg border border-[var(--border)]/20 px-2 text-[var(--muted-foreground)] transition-all duration-150 hover:bg-white/5"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-[var(--border)]/10 bg-white/5 p-4">
-                <p className="text-sm text-[var(--muted-foreground)]">Totalsumma</p>
-                <p className="font-heading text-xl font-semibold text-[var(--foreground)]">
-                  {formatCurrency(totalAmount)}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setCreateOpen(false)}
-                  className="rounded-lg border border-[var(--border)]/20 px-4 py-2 text-sm text-[var(--foreground)] transition-all duration-150 hover:bg-white/5"
-                >
-                  Avbryt
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn-primary rounded-lg px-4 py-2 text-sm text-[var(--foreground)] disabled:opacity-50"
-                >
-                  {submitting ? 'Skapar…' : 'Skapa offert'}
-                </button>
-              </div>
-            </form>
+                            PDF
+                          </a>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

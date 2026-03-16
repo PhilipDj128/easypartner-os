@@ -139,22 +139,39 @@ interface QuoteService {
   quantity?: number;
 }
 
+interface LineItemRow {
+  type?: string;
+  specification: string;
+  quantity?: number;
+  unit_price?: number;
+  binding_period?: string;
+  contract_period?: string;
+}
+
 interface QuotePDFProps {
   quoteId: string;
+  quoteNumber?: string | null;
   createdAt: string;
   customerName: string;
   customerCompany: string | null;
-  services: QuoteService[];
+  services?: QuoteService[];
+  lineItems?: LineItemRow[];
   totalAmount: number;
+  validUntil?: string | null;
+  notes?: string | null;
 }
 
 export function QuotePDF({
   quoteId,
+  quoteNumber,
   createdAt,
   customerName,
   customerCompany,
-  services,
+  services = [],
+  lineItems = [],
   totalAmount,
+  validUntil: validUntilProp,
+  notes,
 }: QuotePDFProps) {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('sv-SE', {
@@ -170,8 +187,24 @@ export function QuotePDF({
       maximumFractionDigits: 0,
     }).format(n);
 
-  const validUntil = new Date(createdAt);
-  validUntil.setDate(validUntil.getDate() + 30);
+  const displayId = quoteNumber || `#${quoteId.slice(0, 8)}`;
+  const validUntilDate = validUntilProp
+    ? formatDate(validUntilProp)
+    : (() => {
+        const d = new Date(createdAt);
+        d.setDate(d.getDate() + 30);
+        return formatDate(d.toISOString());
+      })();
+
+  const oneTime = lineItems.filter((i) => i.type === 'one_time');
+  const monthly = lineItems.filter((i) => i.type === 'monthly');
+  const hasLineItems = oneTime.length > 0 || monthly.length > 0;
+  const rows = hasLineItems
+    ? [
+        ...oneTime.map((r) => ({ spec: r.specification, qty: r.quantity ?? 1, price: r.unit_price ?? 0 })),
+        ...monthly.map((r) => ({ spec: r.specification, qty: r.quantity ?? 1, price: r.unit_price ?? 0 })),
+      ]
+    : services.map((s) => ({ spec: s.name, qty: s.quantity ?? 1, price: s.price }));
 
   return (
     <Document>
@@ -184,8 +217,8 @@ export function QuotePDF({
             </View>
           </View>
           <View style={styles.idSection}>
-            <Text style={styles.idLabel}>Offert-ID</Text>
-            <Text style={styles.idValue}>#{quoteId.slice(0, 8)}</Text>
+            <Text style={styles.idLabel}>Offertnummer</Text>
+            <Text style={styles.idValue}>{displayId}</Text>
             <Text style={styles.date}>{formatDate(createdAt)}</Text>
           </View>
         </View>
@@ -200,15 +233,15 @@ export function QuotePDF({
 
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={styles.col1}>Tjänst</Text>
+            <Text style={styles.col1}>Specifikation</Text>
             <Text style={styles.col2}>Antal</Text>
             <Text style={styles.col3}>Pris</Text>
           </View>
-          {services.map((s, i) => (
+          {rows.map((r, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={styles.col1}>{s.name}</Text>
-              <Text style={styles.col2}>{(s.quantity ?? 1).toString()}</Text>
-              <Text style={styles.col3}>{formatCurrency(s.price)}</Text>
+              <Text style={styles.col1}>{r.spec}</Text>
+              <Text style={styles.col2}>{r.qty.toString()}</Text>
+              <Text style={styles.col3}>{formatCurrency(r.price)}</Text>
             </View>
           ))}
           <View style={[styles.tableRow, styles.totalRow]}>
@@ -223,8 +256,13 @@ export function QuotePDF({
             <Text style={{ fontWeight: 'bold' }}>Betalningsvillkor:</Text> 30 dagar netto från fakturadatum.
           </Text>
           <Text style={[styles.termsText, { marginTop: 8 }]}>
-            <Text style={{ fontWeight: 'bold' }}>Giltighetstid:</Text> Offerten gäller i 30 dagar från ovanstående datum.
+            <Text style={{ fontWeight: 'bold' }}>Giltighetstid:</Text> Offerten gäller till {validUntilDate}.
           </Text>
+          {notes && (
+            <Text style={[styles.termsText, { marginTop: 8 }]}>
+              <Text style={{ fontWeight: 'bold' }}>Övriga villkor:</Text> {notes}
+            </Text>
+          )}
         </View>
 
         <View style={styles.footer} fixed>

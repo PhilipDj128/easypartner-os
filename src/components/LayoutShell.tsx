@@ -5,7 +5,7 @@ import { AppShell } from './AppShell';
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
-  if (pathname.startsWith('/client')) {
+  if (pathname.startsWith('/client') || pathname.startsWith('/quotes/sign')) {
     return <>{children}</>;
   }
   return <AppShell>{children}</AppShell>;

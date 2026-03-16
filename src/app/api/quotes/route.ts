@@ -60,9 +60,14 @@ export async function POST(request: Request) {
   }
   try {
     const body = await request.json();
-    const lineItems = body.line_items != null ? body.line_items : [];
+    const oneTimeItems = Array.isArray(body.one_time_items) ? body.one_time_items : [];
+    const monthlyItems = Array.isArray(body.monthly_items) ? body.monthly_items : [];
+    const lineItems = oneTimeItems.length || monthlyItems.length
+      ? [...oneTimeItems.map((r: Record<string, unknown>) => ({ ...r, type: 'one_time' })), ...monthlyItems.map((r: Record<string, unknown>) => ({ ...r, type: 'monthly' }))]
+      : (Array.isArray(body.line_items) ? body.line_items : []);
     const oneTimeCost = Number(body.one_time_cost) || 0;
     const monthlyCost = Number(body.monthly_cost) || 0;
+    const discountPercent = Number(body.discount_percent) || 0;
     const totalAmount =
       Number(body.total_amount) ||
       (oneTimeCost + monthlyCost) ||
@@ -77,9 +82,12 @@ export async function POST(request: Request) {
     const insertPayload: Record<string, unknown> = {
       customer_id: body.customer_id || null,
       quote_number: quoteNumber,
-      line_items: Array.isArray(lineItems) ? lineItems : [],
+      line_items: lineItems,
+      one_time_items: oneTimeItems,
+      monthly_items: monthlyItems,
       one_time_cost: oneTimeCost,
       monthly_cost: monthlyCost,
+      discount_percent: discountPercent,
       binding_period: body.binding_period || null,
       contract_period: body.contract_period || null,
       total_amount: totalAmount,

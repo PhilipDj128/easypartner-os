@@ -117,8 +117,11 @@ export default function QuoteSignPage() {
 
   const isSigned = quote.status === 'signerad' || signed;
   const lineItems = (quote.line_items || []) as LineItem[];
-  const oneTime = lineItems.filter((i) => i.type === 'one_time');
-  const monthly = lineItems.filter((i) => i.type === 'monthly');
+  const oneTimeItems = (quote as { one_time_items?: LineItem[] }).one_time_items;
+  const monthlyItems = (quote as { monthly_items?: LineItem[] }).monthly_items;
+  const oneTime = (oneTimeItems && oneTimeItems.length > 0 ? oneTimeItems : lineItems.filter((i) => i.type === 'one_time')) as LineItem[];
+  const monthly = (monthlyItems && monthlyItems.length > 0 ? monthlyItems : lineItems.filter((i) => i.type === 'monthly')) as LineItem[];
+  const rowSum = (qty: number, unit: number, disc?: number) => (qty * unit) * (1 - (disc ?? 0) / 100);
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -181,7 +184,7 @@ export default function QuoteSignPage() {
                           <td className="py-2 text-right">{r.quantity ?? 1}</td>
                           <td className="py-2 text-right">{formatCurrency(r.unit_price ?? 0)}</td>
                           <td className="py-2 text-right">
-                            {formatCurrency((r.quantity ?? 1) * (r.unit_price ?? 0))}
+                            {formatCurrency(rowSum(r.quantity ?? 1, r.unit_price ?? 0, (r as { discount_percent?: number }).discount_percent))}
                           </td>
                         </tr>
                       ))}
@@ -214,7 +217,7 @@ export default function QuoteSignPage() {
                           <td className="py-2 text-right">{r.quantity ?? 1}</td>
                           <td className="py-2 text-right">{formatCurrency(r.unit_price ?? 0)}</td>
                           <td className="py-2 text-right">
-                            {formatCurrency((r.quantity ?? 1) * (r.unit_price ?? 0))}
+                            {formatCurrency(rowSum(r.quantity ?? 1, r.unit_price ?? 0, (r as { discount_percent?: number }).discount_percent))}
                           </td>
                         </tr>
                       ))}

@@ -28,9 +28,16 @@ export async function GET(
   }
 
   const customer = (quote as { customers?: { name: string; company: string | null } | null }).customers;
-  const services = Array.isArray(quote.services) ? quote.services : [];
-  const lineItems = Array.isArray(quote.line_items) ? quote.line_items : [];
   const recipientName = (quote as { recipient_name?: string }).recipient_name;
+  const oneTimeItems = Array.isArray((quote as { one_time_items?: unknown[] }).one_time_items)
+    ? (quote as { one_time_items: unknown[] }).one_time_items
+    : [];
+  const monthlyItems = Array.isArray((quote as { monthly_items?: unknown[] }).monthly_items)
+    ? (quote as { monthly_items: unknown[] }).monthly_items
+    : [];
+  const lineItems = Array.isArray(quote.line_items) ? quote.line_items : [];
+  const oneTimeFallback = lineItems.filter((i: { type?: string }) => i.type === 'one_time');
+  const monthlyFallback = lineItems.filter((i: { type?: string }) => i.type === 'monthly');
 
   const pdfElement = React.createElement(QuotePDF, {
     quoteId: quote.id,
@@ -38,8 +45,11 @@ export async function GET(
     createdAt: quote.created_at,
     customerName: (recipientName || customer?.name) ?? 'Kund',
     customerCompany: customer?.company ?? null,
-    services,
-    lineItems,
+    oneTimeItems: oneTimeItems.length > 0 ? oneTimeItems : oneTimeFallback,
+    monthlyItems: monthlyItems.length > 0 ? monthlyItems : monthlyFallback,
+    discountPercent: Number((quote as { discount_percent?: number }).discount_percent) || 0,
+    oneTimeCost: Number((quote as { one_time_cost?: number }).one_time_cost) || undefined,
+    monthlyCost: Number((quote as { monthly_cost?: number }).monthly_cost) || undefined,
     totalAmount: Number(quote.total_amount) || 0,
     validUntil: (quote as { valid_until?: string }).valid_until,
     notes: (quote as { notes?: string }).notes,

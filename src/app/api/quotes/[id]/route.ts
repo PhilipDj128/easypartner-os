@@ -50,6 +50,9 @@ export async function PATCH(
     if (body.valid_until !== undefined) updates.valid_until = body.valid_until;
     if (body.notes !== undefined) updates.notes = body.notes;
     if (body.line_items !== undefined) updates.line_items = body.line_items;
+    if (body.one_time_items !== undefined) updates.one_time_items = body.one_time_items;
+    if (body.monthly_items !== undefined) updates.monthly_items = body.monthly_items;
+    if (body.discount_percent !== undefined) updates.discount_percent = body.discount_percent;
     if (body.one_time_cost !== undefined) updates.one_time_cost = body.one_time_cost;
     if (body.monthly_cost !== undefined) updates.monthly_cost = body.monthly_cost;
     if (body.binding_period !== undefined) updates.binding_period = body.binding_period;

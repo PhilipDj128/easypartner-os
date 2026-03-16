@@ -15,3 +15,8 @@ alter table quotes add column if not exists recipient_name text;
 alter table quotes add column if not exists recipient_email text;
 alter table quotes add column if not exists valid_until date;
 alter table quotes add column if not exists notes text;
+
+-- Discount and separate item arrays
+alter table quotes add column if not exists discount_percent numeric default 0;
+alter table quotes add column if not exists one_time_items jsonb default '[]';
+alter table quotes add column if not exists monthly_items jsonb default '[]';

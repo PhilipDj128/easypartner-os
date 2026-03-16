@@ -32,6 +32,7 @@ interface LineItemOneTime {
   specification: string;
   quantity: number;
   unit_price: number;
+  discount_percent: number;
 }
 interface LineItemMonthly {
   type: 'monthly';
@@ -40,6 +41,7 @@ interface LineItemMonthly {
   unit_price: number;
   binding_period: string;
   contract_period: string;
+  discount_percent: number;
 }
 
 type LineItem = LineItemOneTime | LineItemMonthly;
@@ -94,11 +96,12 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
     phone: '',
   });
   const [lineItemsOneTime, setLineItemsOneTime] = useState<LineItemOneTime[]>([
-    { type: 'one_time', specification: '', quantity: 1, unit_price: 0 },
+    { type: 'one_time', specification: '', quantity: 1, unit_price: 0, discount_percent: 0 },
   ]);
   const [lineItemsMonthly, setLineItemsMonthly] = useState<LineItemMonthly[]>([
-    { type: 'monthly', specification: '', quantity: 1, unit_price: 0, binding_period: '', contract_period: '' },
+    { type: 'monthly', specification: '', quantity: 1, unit_price: 0, binding_period: '', contract_period: '', discount_percent: 0 },
   ]);
+  const [offerDiscountPercent, setOfferDiscountPercent] = useState(0);
   const [notes, setNotes] = useState('');
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [recipientSearch, setRecipientSearch] = useState('');
@@ -129,7 +132,7 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
   );
 
   const addOneTimeRow = () =>
-    setLineItemsOneTime((p) => [...p, { type: 'one_time', specification: '', quantity: 1, unit_price: 0 }]);
+    setLineItemsOneTime((p) => [...p, { type: 'one_time', specification: '', quantity: 1, unit_price: 0, discount_percent: 0 }]);
   const updateOneTime = (i: number, field: keyof LineItemOneTime, value: string | number) =>
     setLineItemsOneTime((p) => p.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
   const removeOneTime = (i: number) =>
@@ -138,7 +141,7 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
   const addMonthlyRow = () =>
     setLineItemsMonthly((p) => [
       ...p,
-      { type: 'monthly', specification: '', quantity: 1, unit_price: 0, binding_period: '', contract_period: '' },
+      { type: 'monthly', specification: '', quantity: 1, unit_price: 0, binding_period: '', contract_period: '', discount_percent: 0 },
     ]);
   const updateMonthly = (i: number, field: keyof LineItemMonthly, value: string | number) =>
     setLineItemsMonthly((p) => p.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
@@ -151,19 +154,31 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
       if (last && !last.specification) {
         return p.map((row, i) => (i === p.length - 1 ? { ...row, specification: name } : row));
       }
-      return [...p, { type: 'one_time', specification: name, quantity: 1, unit_price: 0 }];
+      return [...p, { type: 'one_time', specification: name, quantity: 1, unit_price: 0, discount_percent: 0 }];
     });
   };
 
+  const rowSum = (qty: number, unit: number, discountPct: number) => {
+    const raw = (qty || 0) * (unit || 0);
+    return raw * (1 - (discountPct || 0) / 100);
+  };
+
   const oneTimeTotal = lineItemsOneTime.reduce(
-    (sum, r) => sum + (Number(r.quantity) || 0) * (Number(r.unit_price) || 0),
+    (sum, r) => sum + rowSum(Number(r.quantity), Number(r.unit_price), Number(r.discount_percent)),
     0
   );
   const monthlyTotal = lineItemsMonthly.reduce(
-    (sum, r) => sum + (Number(r.quantity) || 0) * (Number(r.unit_price) || 0),
+    (sum, r) => sum + rowSum(Number(r.quantity), Number(r.unit_price), Number(r.discount_percent)),
     0
   );
-  const totalAmount = oneTimeTotal + monthlyTotal;
+  const subtotal = oneTimeTotal + monthlyTotal;
+  const quoteDiscountAmount = subtotal * ((offerDiscountPercent || 0) / 100);
+  const oneTimeAfterDiscount = subtotal > 0 ? oneTimeTotal - (quoteDiscountAmount * oneTimeTotal / subtotal) : 0;
+  const monthlyAfterDiscount = subtotal > 0 ? monthlyTotal - (quoteDiscountAmount * monthlyTotal / subtotal) : 0;
+  const moms25 = oneTimeAfterDiscount * 0.25;
+  const oneTimeInclMoms = oneTimeAfterDiscount + moms25;
+  const monthlyInclMoms = monthlyAfterDiscount * 1.25;
+  const totalAmount = oneTimeAfterDiscount + monthlyAfterDiscount;
 
   const addRecipientFromCustomer = (c: Customer) => {
     const name = c.name || '';
@@ -209,17 +224,17 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
     setSaving(true);
     try {
       const customerId = selectedCustomerId || null;
-      const line_items = [
-        ...lineItemsOneTime.filter((r) => r.specification.trim()).map((r) => ({ ...r })),
-        ...lineItemsMonthly.filter((r) => r.specification.trim()).map((r) => ({ ...r })),
-      ];
+      const oneTimeItems = lineItemsOneTime.filter((r) => r.specification.trim()).map((r) => ({ ...r }));
+      const monthlyItems = lineItemsMonthly.filter((r) => r.specification.trim()).map((r) => ({ ...r }));
       const payload = {
         customer_id: customerId,
         quote_date: quoteDate,
         valid_until: validUntil,
-        line_items,
+        one_time_items: oneTimeItems,
+        monthly_items: monthlyItems,
         one_time_cost: oneTimeTotal,
         monthly_cost: monthlyTotal,
+        discount_percent: offerDiscountPercent || 0,
         total_amount: totalAmount,
         notes: notes || null,
         recipient_name: selectedCustomer?.name || customerManual.name || null,
@@ -451,16 +466,17 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
               <table className="min-w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-[var(--muted-foreground)]">
-                    <th className="pb-2 pr-4">Specifikation</th>
-                    <th className="pb-2 pr-4 w-20">Antal</th>
-                    <th className="pb-2 pr-4 w-28">Á pris</th>
-                    <th className="pb-2 w-28 text-right">Summa</th>
+                    <th className="pb-2 pr-2">Specifikation</th>
+                    <th className="pb-2 pr-2 w-16">Antal</th>
+                    <th className="pb-2 pr-2 w-24">Á pris</th>
+                    <th className="pb-2 pr-2 w-20">Rabatt (%)</th>
+                    <th className="pb-2 w-24 text-right">Summa</th>
                   </tr>
                 </thead>
                 <tbody>
                   {lineItemsOneTime.map((r, i) => (
                     <tr key={i} className="border-b border-[var(--border)]/50">
-                      <td className="py-2 pr-4">
+                      <td className="py-2 pr-2">
                         <input
                           type="text"
                           value={r.specification}
@@ -468,7 +484,7 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
                           className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
                         />
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="py-2 pr-2">
                         <input
                           type="number"
                           min={1}
@@ -477,21 +493,35 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
                           className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
                         />
                       </td>
-                      <td className="py-2 pr-4">
+                      <td className="py-2 pr-2">
                         <input
                           type="number"
                           min={0}
-                          value={r.unit_price || ''}
+                          value={r.unit_price ?? ''}
                           onChange={(e) => updateOneTime(i, 'unit_price', parseFloat(e.target.value) || 0)}
                           className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
                         />
                       </td>
+                      <td className="py-2 pr-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={r.discount_percent ?? ''}
+                          onChange={(e) => updateOneTime(i, 'discount_percent', parseFloat(e.target.value) || 0)}
+                          className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
+                        />
+                      </td>
                       <td className="py-2 text-right">
-                        {formatCurrency((r.quantity || 0) * (r.unit_price || 0))}
+                        {formatCurrency(rowSum(r.quantity, r.unit_price, r.discount_percent ?? 0))}
                         <button type="button" onClick={() => removeOneTime(i)} className="ml-2 text-red-400">×</button>
                       </td>
                     </tr>
                   ))}
+                  <tr className="border-t-2 border-[var(--border)] font-medium">
+                    <td colSpan={4} className="py-2 text-right text-[var(--foreground)]">Totalt engångskostnad</td>
+                    <td className="py-2 text-right">{formatCurrency(oneTimeTotal)}</td>
+                  </tr>
                 </tbody>
               </table>
               <button type="button" onClick={addOneTimeRow} className="mt-2 text-sm text-indigo-400 hover:underline">
@@ -509,10 +539,11 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
                 <thead>
                   <tr className="border-b border-[var(--border)] text-left text-xs uppercase text-[var(--muted-foreground)]">
                     <th className="pb-2 pr-2">Specifikation</th>
-                    <th className="pb-2 pr-2 w-24">Bindningstid</th>
-                    <th className="pb-2 pr-2 w-24">Avtalstid</th>
-                    <th className="pb-2 pr-2 w-20">Antal</th>
-                    <th className="pb-2 pr-2 w-24">Á pris</th>
+                    <th className="pb-2 pr-2 w-20">Bindningstid</th>
+                    <th className="pb-2 pr-2 w-20">Avtalstid</th>
+                    <th className="pb-2 pr-2 w-16">Antal</th>
+                    <th className="pb-2 pr-2 w-20">Á pris</th>
+                    <th className="pb-2 pr-2 w-16">Rabatt (%)</th>
                     <th className="pb-2 w-24 text-right">Summa</th>
                   </tr>
                 </thead>
@@ -558,23 +589,89 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
                         <input
                           type="number"
                           min={0}
-                          value={r.unit_price || ''}
+                          value={r.unit_price ?? ''}
                           onChange={(e) => updateMonthly(i, 'unit_price', parseFloat(e.target.value) || 0)}
                           className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
                         />
                       </td>
+                      <td className="py-2 pr-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={r.discount_percent ?? ''}
+                          onChange={(e) => updateMonthly(i, 'discount_percent', parseFloat(e.target.value) || 0)}
+                          className="w-full rounded border border-[var(--border)] bg-white/5 px-2 py-1 text-[var(--foreground)]"
+                        />
+                      </td>
                       <td className="py-2 text-right">
-                        {formatCurrency((r.quantity || 0) * (r.unit_price || 0))}
+                        {formatCurrency(rowSum(r.quantity, r.unit_price, r.discount_percent ?? 0))}
                         <button type="button" onClick={() => removeMonthly(i)} className="ml-2 text-red-400">×</button>
                       </td>
                     </tr>
                   ))}
+                  <tr className="border-t-2 border-[var(--border)] font-medium">
+                    <td colSpan={6} className="py-2 text-right text-[var(--foreground)]">Totalt per månad</td>
+                    <td className="py-2 text-right">{formatCurrency(monthlyTotal)}</td>
+                  </tr>
                 </tbody>
               </table>
               <button type="button" onClick={addMonthlyRow} className="mt-2 text-sm text-indigo-400 hover:underline">
                 + Lägg till rad
               </button>
             </div>
+          </section>
+
+          <section>
+            <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+              Rabatt på hela offerten
+            </h3>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={offerDiscountPercent || ''}
+                onChange={(e) => setOfferDiscountPercent(parseFloat(e.target.value) || 0)}
+                className="w-24 rounded-lg border border-[var(--border)] bg-white/5 px-3 py-2 text-[var(--foreground)]"
+              />
+              <span className="text-sm text-[var(--muted-foreground)]">%</span>
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-[var(--border)] bg-white/5 p-4">
+            <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
+              Summering
+            </h3>
+            <ul className="space-y-1 text-sm">
+              <li className="flex justify-between">
+                <span className="text-[var(--muted-foreground)]">Delsumma</span>
+                <span>{formatCurrency(subtotal)}</span>
+              </li>
+              {offerDiscountPercent > 0 && (
+                <li className="flex justify-between text-amber-400">
+                  <span>Rabatt ({offerDiscountPercent}%)</span>
+                  <span>-{formatCurrency(quoteDiscountAmount)}</span>
+                </li>
+              )}
+              <li className="flex justify-between">
+                <span className="text-[var(--muted-foreground)]">Totalt ex. moms</span>
+                <span>{formatCurrency(totalAmount)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-[var(--muted-foreground)]">Moms 25%</span>
+                <span>{formatCurrency(moms25)}</span>
+              </li>
+              <li className="flex justify-between font-semibold text-[var(--foreground)]">
+                <span>Totalt engång inkl. moms</span>
+                <span>{formatCurrency(oneTimeInclMoms)}</span>
+              </li>
+              <li className="flex justify-between font-semibold text-[var(--foreground)]">
+                <span>Månadskostnad inkl. moms</span>
+                <span>{formatCurrency(monthlyInclMoms)} / mån</span>
+              </li>
+            </ul>
           </section>
 
           <section>
@@ -592,7 +689,7 @@ export function QuoteWizard({ customers }: { customers: Customer[] }) {
 
           <div className="flex justify-end border-t border-[var(--border)] pt-6">
             <p className="mr-4 self-center text-sm text-[var(--muted-foreground)]">
-              Totalt: <strong className="text-[var(--foreground)]">{formatCurrency(totalAmount)}</strong>
+              Totalt ex. moms: <strong className="text-[var(--foreground)]">{formatCurrency(totalAmount)}</strong>
             </p>
             <button
               type="button"

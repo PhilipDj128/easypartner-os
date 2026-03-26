@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Server-side packages som Turbopack inte kan bundla
+  serverExternalPackages: [
+    'cheerio',
+    'googleapis',
+    'google-auth-library',
+    'puppeteer',
+    'nodemailer',
+  ],
+
   // Security headers
   async headers() {
     return [

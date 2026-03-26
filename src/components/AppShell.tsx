@@ -13,6 +13,8 @@ import {
   Bell,
   ChevronRight,
   Search as SearchIcon,
+  Target,
+  ClipboardCheck,
 } from 'lucide-react';
 import { ChatNavItem } from './ChatNavItem';
 import { ChatNotificationProvider } from './ChatNotificationProvider';
@@ -28,6 +30,7 @@ const NAV_GROUPS = [
   {
     label: 'Försäljning',
     items: [
+      { href: '/crm', label: 'CRM', Icon: Target },
       { href: '/customers', label: 'Kunder', Icon: Users },
       { href: '/quotes', label: 'Offerter', Icon: FileText },
       { href: '/prospektering', label: 'Prospektering', Icon: Search },
@@ -38,6 +41,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/domains', label: 'Domäner', Icon: Globe },
       { href: '/seo', label: 'SEO', Icon: BarChart3 },
+      { href: '/audit', label: 'SEO Audit', Icon: ClipboardCheck },
     ],
   },
   {
@@ -49,11 +53,13 @@ const NAV_GROUPS = [
 const PAGE_NAMES: Record<string, string> = {
   '/': 'Dashboard',
   '/chat': 'Chatt',
+  '/crm': 'CRM',
   '/customers': 'Kunder',
   '/economy': 'Ekonomi',
   '/quotes': 'Offerter',
   '/domains': 'Domäner',
   '/seo': 'SEO',
+  '/audit': 'SEO Audit',
   '/prospektering': 'Prospektering',
 };
 

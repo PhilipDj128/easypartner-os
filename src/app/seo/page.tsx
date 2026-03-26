@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { SEODashboard } from '@/components/seo/SEODashboard';
+import { SEOPageTabs } from '@/components/seo/SEOPageTabs';
 
 export default async function SEOPage() {
   const supabase = getSupabaseAdmin();
@@ -18,7 +19,9 @@ export default async function SEOPage() {
       <h1 className="mb-8 font-heading text-3xl font-semibold text-[var(--foreground)]">
         SEO-dashboard
       </h1>
-      <SEODashboard customers={customers} domains={domains} />
+      <SEOPageTabs
+        keywordTab={<SEODashboard customers={customers} domains={domains} />}
+      />
     </div>
   );
 }

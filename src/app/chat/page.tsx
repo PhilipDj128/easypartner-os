@@ -385,7 +385,7 @@ export default function ChatPage() {
                 <p className="py-4 text-center text-sm text-zinc-500">Inga meddelanden än. Skriv något nedan.</p>
               )}
               {(displayMessages as { sender_id?: string; sender?: Profile; created_at: string; content: string; id: string; read_at?: string | null }[]).map((m, i) => {
-                const prev = i > 0 ? displayMessages[i - 1] as { sender_id?: string; created_at: string } : null;
+                const prev = i > 0 ? displayMessages[i - 1] as { sender_id: string | null; created_at: string } : null;
                 const group = shouldGroup(prev, { sender_id: m.sender_id ?? null, created_at: m.created_at });
                 return (
                   <div key={m.id} className={group ? 'ml-10 mt-0.5' : 'mt-4'}>

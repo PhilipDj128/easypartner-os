@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Google service account key
+easypartner-490113-3e3fca33136a.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

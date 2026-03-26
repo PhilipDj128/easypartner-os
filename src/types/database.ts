@@ -51,3 +51,32 @@ export interface Reminder {
   due_date: string | null;
   completed: boolean;
 }
+
+export type LeadStatus = 'ny' | 'kontaktad' | 'möte' | 'offert' | 'kund' | 'förlorad' | 'added_to_crm';
+export type MatchedProduct = 'SEO' | 'M365' | 'IT-säkerhet' | 'Telefoni';
+
+export interface Lead {
+  id: string;
+  created_at: string;
+  company_name: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  score: number;
+  issues: string[];
+  built_by: string | null;
+  runs_ads: boolean;
+  poor_seo: boolean;
+  slow_site: boolean;
+  status: LeadStatus;
+  notes: string | null;
+  org_nr: string | null;
+  decision_maker_name: string | null;
+  decision_maker_title: string | null;
+  website_score: number | null;
+  google_position_keyword: string | null;
+  google_position_rank: number | null;
+  current_it_provider: string | null;
+  matched_product: MatchedProduct | null;
+  last_updated: string | null;
+}

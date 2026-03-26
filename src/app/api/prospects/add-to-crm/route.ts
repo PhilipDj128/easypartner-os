@@ -73,8 +73,13 @@ export async function POST(request: Request) {
         contact_phone: contact_phone || null,
         score: score ?? 0,
         issues: Array.isArray(issues) ? issues : [],
-        status: 'added_to_crm',
+        runs_ads: body.runs_ads ?? false,
+        status: 'kund',
         notes: `Lagt till som kund: ${customer.id}`,
+        decision_maker_name: body.decision_maker_name || null,
+        decision_maker_title: body.decision_maker_title || null,
+        matched_product: body.matched_product || null,
+        current_it_provider: body.current_it_provider || null,
       });
     } catch {
       // leads-tabellen kanske saknas

@@ -9,8 +9,8 @@
   --muted: #a1a1aa;
   --muted-foreground: #71717a;
   --subtle: #52525b;
-  --primary: #fafafa;
-  --primary-foreground: #0a0a0a;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
   --accent: #1c1c1c;
   --radius: 0.625rem;
   --sidebar: #111111;
@@ -26,6 +26,30 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --font-sans: var(--font-body);
+
+  /* Brand colors */
+  --color-brand-50: #eef2ff;
+  --color-brand-100: #e0e7ff;
+  --color-brand-200: #c7d2fe;
+  --color-brand-300: #a5b4fc;
+  --color-brand-400: #818cf8;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
+  --color-brand-800: #3730a3;
+  --color-brand-900: #312e81;
+
+  /* Sand (neutral warm grays) */
+  --color-sand-50: #fafaf9;
+  --color-sand-100: #f5f5f4;
+  --color-sand-200: #e7e5e4;
+  --color-sand-300: #d6d3d1;
+  --color-sand-400: #a8a29e;
+  --color-sand-500: #78716c;
+  --color-sand-600: #57534e;
+  --color-sand-700: #44403c;
+  --color-sand-800: #292524;
+  --color-sand-900: #1c1917;
 }
 
 body {
@@ -55,7 +79,7 @@ body {
   transition: all 150ms ease;
 }
 .btn-primary:hover {
-  filter: brightness(0.95);
+  filter: brightness(1.1);
 }
 
 .btn-outline {
@@ -91,6 +115,12 @@ body {
 .badge-gray {
   background: rgba(255, 255, 255, 0.05);
   color: var(--muted);
+  border-radius: calc(var(--radius) - 2px);
+}
+.badge-green {
+  background: rgba(34, 197, 94, 0.1);
+  color: #86efac;
+  border: 1px solid rgba(34, 197, 94, 0.2);
   border-radius: calc(var(--radius) - 2px);
 }
 
@@ -130,4 +160,9 @@ body {
 }
 .animate-fade-in {
   animation: fadeIn 0.3s ease forwards;
+}
+
+/* Glow effects */
+.glow-indigo {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.15), 0 0 40px rgba(99, 102, 241, 0.05);
 }

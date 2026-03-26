@@ -38,10 +38,10 @@ yarn-error.log*
 
 # Google service account key
 easypartner-490113-3e3fca33136a.json
+GOOGLE_SERVICE_ACCOUNT_KEY_VALUE.txt
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 .vercel
-GOOGLE_SERVICE_ACCOUNT_KEY_VALUE.txt

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { sendEmail } from '@/lib/resend';
 import { randomBytes } from 'crypto';
+import { getBaseUrl } from '@/lib/url';
 
 function generateSignToken(): string {
   return randomBytes(24).toString('base64url');
@@ -43,10 +44,7 @@ export async function POST(
     }
 
     const signToken = generateSignToken();
-    const baseUrl =
-      process.env.VERCEL_URL && !process.env.VERCEL_URL.startsWith('http')
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.VERCEL_URL || 'http://localhost:3000';
+    const baseUrl = getBaseUrl();
     const signUrl = `${baseUrl}/quotes/sign/${signToken}`;
 
     const { error: updateError } = await supabase

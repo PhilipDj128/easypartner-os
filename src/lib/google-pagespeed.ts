@@ -9,7 +9,7 @@ export interface PageSpeedResult {
 }
 
 export async function runPageSpeed(url: string): Promise<PageSpeedResult> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
+  const key = process.env.GOOGLE_PAGESPEED_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
   const out: PageSpeedResult = { performance_score: null, load_time_seconds: null };
   if (!key || key.startsWith('din_')) return out;
   if (!url || !url.startsWith('http')) return out;

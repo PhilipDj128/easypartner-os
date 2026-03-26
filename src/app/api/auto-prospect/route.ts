@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { sendEmail } from '@/lib/resend';
+import { getBaseUrl } from '@/lib/url';
 
 const NIGHTLY_SEARCHES: { bransch: string; stad: string }[] = [
   { bransch: 'rörmokare', stad: 'Stockholm' },
@@ -49,10 +50,7 @@ const ISSUE_LABELS: Record<string, string> = {
 };
 
 async function fetchAnalyzedLeads(industry: string, city: string): Promise<AnalyzedLead[]> {
-  const baseUrl =
-    process.env.VERCEL_URL && !process.env.VERCEL_URL.startsWith('http')
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.VERCEL_URL || 'http://localhost:3000';
+  const baseUrl = getBaseUrl();
 
   const res = await fetch(`${baseUrl}/api/prospects/analyze`, {
     method: 'POST',
@@ -172,10 +170,7 @@ async function handleCron() {
   }
 
   if (canEmail) {
-    const appBase =
-      process.env.VERCEL_URL && !process.env.VERCEL_URL.startsWith('http')
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.VERCEL_URL || 'http://localhost:3000';
+    const appBase = getBaseUrl();
 
     const lines: string[] = [];
     lines.push(`<p>Den nattliga prospekteringen är klar.</p>`);

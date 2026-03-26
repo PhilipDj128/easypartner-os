@@ -16,7 +16,7 @@ export async function searchPlacesText(
   query: string,
   options?: { language?: string; region?: string }
 ): Promise<{ place_id: string }[]> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
+  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
   if (!key || key.startsWith('din_')) return [];
 
   const params = new URLSearchParams({
@@ -47,7 +47,7 @@ export async function searchPlacesText(
 
 /** Place Details: namn, telefon, betyg, antal recensioner */
 export async function fetchPlaceDetails(placeId: string): Promise<GooglePlaceInfo> {
-  const key = process.env.GOOGLE_PLACES_API_KEY;
+  const key = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
   const out: GooglePlaceInfo = {
     name: null,
     phone: null,

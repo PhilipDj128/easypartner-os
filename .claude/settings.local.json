@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Supabase__execute_sql",
+      "Bash(npx vercel:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest add card button input badge progress tabs separator skeleton -y)",
+      "Bash(npx shadcn@latest init -y)",
+      "Bash(npm run:*)",
+      "WebSearch",
+      "Bash(cd:*)",
+      "Bash(rm -f .git/index.lock)",
+      "Bash(rm -rf node_modules)",
+      "Bash(rm -f package-lock.json)"
+    ]
+  }
+}

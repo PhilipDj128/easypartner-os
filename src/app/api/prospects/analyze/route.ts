@@ -551,7 +551,7 @@ export async function POST(request: Request) {
                 runs_ads: lead.runs_ads,
                 poor_seo: lead.poor_seo,
                 slow_site: lead.slow_site,
-                status: 'new',
+                status: 'ny',
                 notes: lead.sales_pitch,
               });
             } catch (err) {

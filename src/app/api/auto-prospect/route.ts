@@ -149,7 +149,7 @@ async function handleCron() {
           website: lead.website,
           score: lead.score ?? 0,
           issues: Array.isArray(lead.issues) ? lead.issues : [],
-          status: 'new',
+          status: 'ny',
           source: 'auto-nightly',
           notes: topIssueLabel ? `Topp-signal: ${topIssueLabel}` : null,
         });

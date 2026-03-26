@@ -44,3 +44,4 @@ easypartner-490113-3e3fca33136a.json
 next-env.d.ts
 
 .vercel
+GOOGLE_SERVICE_ACCOUNT_KEY_VALUE.txt

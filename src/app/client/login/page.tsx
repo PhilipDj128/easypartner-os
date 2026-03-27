@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 export default function ClientLoginPage() {
@@ -14,25 +13,28 @@ export default function ClientLoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const supabase = createClient();
-    if (!supabase) {
-      setError('Systemet är inte konfigurerat.');
-      setLoading(false);
-      return;
+
+    try {
+      const res = await fetch('/api/auth/check-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Kunde inte skicka länk.');
+        setLoading(false);
+        return;
+      }
+
+      setSent(true);
+    } catch {
+      setError('Något gick fel. Försök igen.');
     }
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/client/dashboard`,
-      },
-    });
+
     setLoading(false);
-    if (err) {
-      setError(err.message || 'Kunde inte skicka länk.');
-      return;
-    }
-    setSent(true);
   };
 
   const urlError = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('error') : null;
@@ -88,6 +90,19 @@ export default function ClientLoginPage() {
             boxShadow: '0 0 40px rgba(0,0,0,0.3), 0 0 80px rgba(99,102,241,0.04)',
           }}
         >
+          {urlError === 'access_denied' && (
+            <div
+              className="mb-6 rounded-lg p-3 text-sm"
+              style={{
+                background: 'rgba(239,68,68,0.08)',
+                border: '1px solid rgba(239,68,68,0.15)',
+                color: '#fca5a5',
+              }}
+            >
+              Åtkomst nekad — din e-post har inte behörighet. Kontakta administratören.
+            </div>
+          )}
+
           {(urlError === 'auth' || urlError === 'missing_code') && (
             <div
               className="mb-6 rounded-lg p-3 text-sm"

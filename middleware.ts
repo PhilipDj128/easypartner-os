@@ -1,6 +1,37 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
+/**
+ * Kontrollera om en användares e-post finns i allowed_emails.
+ * Returnerar true om godkänd, false om ej.
+ */
+async function isEmailAllowed(email: string): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = serviceKey || anonKey;
+  if (!url || !key) return true; // Om ej konfigurerat, släpp igenom (dev)
+
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/allowed_emails?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id`,
+      {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+        },
+      }
+    );
+    if (!res.ok) return true; // Vid fel, släpp igenom (fail-open för att inte låsa ut alla)
+    const data = await res.json();
+    return Array.isArray(data) && data.length > 0;
+  } catch {
+    return true; // Vid nätverksfel, fail-open
+  }
+}
+
 // Routes som INTE kräver auth (publika)
 const PUBLIC_PATHS = [
   '/client/login',
@@ -98,6 +129,13 @@ export async function middleware(request: NextRequest) {
           { status: 401 }
         );
       }
+      // Kolla allowlist
+      if (user.email && !(await isEmailAllowed(user.email))) {
+        return NextResponse.json(
+          { error: 'Åtkomst nekad — din e-post är inte godkänd.' },
+          { status: 403 }
+        );
+      }
     } else {
       // UI-sidor: redirect till login om ej inloggad
       const { createServerClient } = await import('@supabase/ssr');
@@ -119,6 +157,11 @@ export async function middleware(request: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           return NextResponse.redirect(new URL('/client/login', request.url));
+        }
+        // Kolla allowlist
+        if (user.email && !(await isEmailAllowed(user.email))) {
+          // Logga ut användaren och skicka till login med felmeddelande
+          return NextResponse.redirect(new URL('/client/login?error=access_denied', request.url));
         }
       }
     }

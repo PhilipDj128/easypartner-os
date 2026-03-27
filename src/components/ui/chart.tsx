@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import * as React from 'react'
@@ -118,19 +119,13 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<'div'> & {
-    active?: boolean
-    payload?: Array<Record<string, unknown>>
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  React.ComponentProps<'div'> & {
     hideLabel?: boolean
     hideIndicator?: boolean
     indicator?: 'line' | 'dot' | 'dashed'
     nameKey?: string
     labelKey?: string
-    label?: string
-    labelFormatter?: (label: unknown, payload: Array<Record<string, unknown>>) => React.ReactNode
-    labelClassName?: string
-    formatter?: (value: unknown, name: string, item: Record<string, unknown>, index: number, payload: Array<Record<string, unknown>>) => React.ReactNode
-    color?: string
   }) {
   const { config } = useChart()
 

@@ -96,8 +96,8 @@ export async function middleware(request: NextRequest) {
     return updateSession(request);
   }
 
-  // Admin paths — kolla auth
-  if (isAdminPath(pathname)) {
+  // Alla icke-publika paths kräver auth
+  {
     const response = await updateSession(request);
 
     // För API-routes: kolla Supabase-session via cookie
@@ -168,9 +168,6 @@ export async function middleware(request: NextRequest) {
 
     return response;
   }
-
-  // Allt annat (startsida, statiska filer) — släpp igenom
-  return updateSession(request);
 }
 
 export const config = {

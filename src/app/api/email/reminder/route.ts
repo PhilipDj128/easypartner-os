@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { sendEmail } from '@/lib/resend';
 
+export async function GET() {
+  return handleReminder();
+}
+
 export async function POST() {
+  return handleReminder();
+}
+
+async function handleReminder() {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ sent: 0 });
 

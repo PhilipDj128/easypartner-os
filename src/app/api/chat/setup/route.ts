@@ -16,7 +16,7 @@ export async function POST() {
   if (existing?.length) return NextResponse.json({ ok: true, seeded: false });
 
   await admin.from('profiles').upsert(
-    { id: user.id, email: user.email ?? undefined, full_name: user.user_metadata?.full_name ?? user.email ?? null },
+    { id: user.id, email: user.email ?? undefined, name: user.user_metadata?.full_name ?? user.email ?? null },
     { onConflict: 'id' }
   );
 

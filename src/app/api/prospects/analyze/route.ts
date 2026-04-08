@@ -220,6 +220,7 @@ export async function POST(request: Request) {
         const industry = (body.industry || '').toString().trim() || 'företag';
         const city = (body.city || '').toString().trim() || 'Sverige';
         const saveToDb = body.save_to_db !== false;
+        const maxResults = Math.min(Math.max(Number(body.max_results) || 20, 1), 20);
 
         const supabase = getSupabaseAdmin();
         if (!supabase && saveToDb) {
@@ -238,11 +239,11 @@ export async function POST(request: Request) {
         const q = `${industry} ${city}`;
         send({ type: 'progress', message: 'Hämtar företag...', progress: 5 });
 
-        const serpResult = await searchSerp(q, 'Sweden', 20);
+        const serpResult = await searchSerp(q, 'Sweden', maxResults);
         const allOrgs = serpResult?.organic_results || [];
         const orgs = allOrgs
           .filter((r: { link?: string }) => r.link && !isBlockedDomain(r.link))
-          .slice(0, 20);
+          .slice(0, maxResults);
         const serpAds = (serpResult?.ads ?? serpResult?.paid_results ?? []) as { link?: string; displayed_link?: string }[];
         const adLinks = serpAds.map((a) => (a.link || a.displayed_link || '').toLowerCase()).filter(Boolean);
 
@@ -262,10 +263,12 @@ export async function POST(request: Request) {
         const analyses = await Promise.all(
           orgs.map(async (r: { title?: string; link?: string }, i: number) => {
             const website = r.link || '';
-            const companyName = (r.title || `Företag ${i + 1}`).replace(
+            const rawTitle = (r.title || `Företag ${i + 1}`).replace(
               / - .*$/,
               ''
             );
+            // Rensa SEO-titlar: ta bort allt efter | eller –
+            const companyName = rawTitle.split(/\s*[|–—]\s*/)[0].trim() || rawTitle;
             let analysis = {
               built_by_other: false,
               built_by_agency: null as string | null,
@@ -504,9 +507,12 @@ export async function POST(request: Request) {
           if (agency_reputation?.warned) issues.push('agency_warned');
           if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
 
+          // Använd Google Places-namn om det finns (renare än SEO-titel)
+          const displayName = company_info.google_places_name || companyName;
+
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,
-            company_name: companyName,
+            company_name: displayName,
             website,
             contact_email: null as string | null,
             contact_phone: contact_phone as string | null,

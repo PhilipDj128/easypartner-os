@@ -54,7 +54,10 @@ async function fetchAnalyzedLeads(industry: string, city: string): Promise<Analy
 
   const res = await fetch(`${baseUrl}/api/prospects/analyze`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(process.env.CRON_SECRET ? { 'x-cron-secret': process.env.CRON_SECRET } : {}),
+    },
     body: JSON.stringify({ industry, city, save_to_db: false }),
   });
 

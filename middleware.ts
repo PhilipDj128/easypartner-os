@@ -32,6 +32,54 @@ async function isEmailAllowed(email: string): Promise<boolean> {
   }
 }
 
+/**
+ * Hämta användarens roll från profiles-tabellen.
+ * Returnerar 'admin', 'user', eller 'pending'.
+ */
+async function getUserRole(userId: string): Promise<string> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = serviceKey || anonKey;
+  if (!url || !key) return 'admin'; // Dev fallback
+
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/profiles?id=eq.${userId}&select=role`,
+      {
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+        },
+      }
+    );
+    if (!res.ok) return 'admin'; // Fail-open
+    const data = await res.json();
+    return data?.[0]?.role ?? 'pending';
+  } catch {
+    return 'admin'; // Fail-open
+  }
+}
+
+// Sidor som kräver admin-roll (user-rollen har INTE tillgång)
+const ADMIN_ONLY_PATHS = [
+  '/seo',
+  '/audit',
+  '/domains',
+  '/economy',
+];
+
+const ADMIN_ONLY_API_PREFIXES = [
+  '/api/seo',
+  '/api/audit',
+  '/api/domains',
+  '/api/economy',
+  '/api/expenses',
+  '/api/revenue',
+];
+
 // Routes som INTE kräver auth (publika)
 const PUBLIC_PATHS = [
   '/client/login',
@@ -42,6 +90,8 @@ const PUBLIC_PATHS = [
   '/api/email/reminder',  // Cron
   '/api/monitoring',      // Cron
   '/api/health-check',    // Publik health check
+  '/api/admin/',          // Admin endpoints (egen auth via CRON_SECRET)
+  '/api/prospects/analyze', // Anropas internt från auto-prospect cron
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -136,6 +186,16 @@ export async function middleware(request: NextRequest) {
           { status: 403 }
         );
       }
+      // Rollbaserad åtkomstkontroll för API
+      if (ADMIN_ONLY_API_PREFIXES.some((p) => pathname.startsWith(p))) {
+        const role = await getUserRole(user.id);
+        if (role !== 'admin') {
+          return NextResponse.json(
+            { error: 'Åtkomst nekad — kräver admin-behörighet.' },
+            { status: 403 }
+          );
+        }
+      }
     } else {
       // UI-sidor: redirect till login om ej inloggad
       const { createServerClient } = await import('@supabase/ssr');
@@ -160,8 +220,14 @@ export async function middleware(request: NextRequest) {
         }
         // Kolla allowlist
         if (user.email && !(await isEmailAllowed(user.email))) {
-          // Logga ut användaren och skicka till login med felmeddelande
           return NextResponse.redirect(new URL('/client/login?error=access_denied', request.url));
+        }
+        // Rollbaserad åtkomstkontroll för UI-sidor
+        if (ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
+          const role = await getUserRole(user.id);
+          if (role !== 'admin') {
+            return NextResponse.redirect(new URL('/?error=access_denied', request.url));
+          }
         }
       }
     }

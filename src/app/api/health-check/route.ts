@@ -5,6 +5,10 @@ import { getSupabaseAdmin } from '@/lib/supabase';
 import { runHealthCheck } from '@/lib/health-check';
 import { HealthCheckPDF } from '@/components/health-check/HealthCheckPDF';
 
+export async function GET() {
+  return NextResponse.json({ status: 'ok', service: 'health-check' });
+}
+
 export async function POST(request: Request) {
   const supabase = getSupabaseAdmin();
   try {

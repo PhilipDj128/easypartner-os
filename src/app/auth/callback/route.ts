@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -20,6 +21,20 @@ export async function GET(request: Request) {
   if (error) {
     console.error('[auth/callback]', error);
     return NextResponse.redirect(`${origin}/client/login?error=auth`);
+  }
+
+  // Auto-create profile on login so chat and other features work immediately
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const admin = getSupabaseAdmin();
+    if (user && admin) {
+      await admin.from('profiles').upsert(
+        { id: user.id, email: user.email ?? undefined, name: user.user_metadata?.full_name ?? user.email ?? null },
+        { onConflict: 'id' }
+      );
+    }
+  } catch (e) {
+    console.error('[auth/callback] profile upsert failed:', e);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

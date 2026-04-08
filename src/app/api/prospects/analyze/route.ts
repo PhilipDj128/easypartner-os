@@ -220,6 +220,7 @@ export async function POST(request: Request) {
         const industry = (body.industry || '').toString().trim() || 'företag';
         const city = (body.city || '').toString().trim() || 'Sverige';
         const saveToDb = body.save_to_db !== false;
+        const maxResults = Math.min(Math.max(Number(body.max_results) || 20, 1), 20);
 
         const supabase = getSupabaseAdmin();
         if (!supabase && saveToDb) {
@@ -238,11 +239,11 @@ export async function POST(request: Request) {
         const q = `${industry} ${city}`;
         send({ type: 'progress', message: 'Hämtar företag...', progress: 5 });
 
-        const serpResult = await searchSerp(q, 'Sweden', 20);
+        const serpResult = await searchSerp(q, 'Sweden', maxResults);
         const allOrgs = serpResult?.organic_results || [];
         const orgs = allOrgs
           .filter((r: { link?: string }) => r.link && !isBlockedDomain(r.link))
-          .slice(0, 20);
+          .slice(0, maxResults);
         const serpAds = (serpResult?.ads ?? serpResult?.paid_results ?? []) as { link?: string; displayed_link?: string }[];
         const adLinks = serpAds.map((a) => (a.link || a.displayed_link || '').toLowerCase()).filter(Boolean);
 

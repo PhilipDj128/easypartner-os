@@ -12,7 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 
-type Profile = { id: string; email: string | null; full_name: string | null };
+type Profile = { id: string; email: string | null; name: string | null };
 type Channel = { id: string; name: string; description: string | null; type: string; created_by: string | null };
 type ChannelWithMeta = Channel & { unread?: number; member_count?: number };
 type ChatMessage = {
@@ -42,10 +42,10 @@ function shouldGroup(prev: { sender_id: string | null; created_at: string } | nu
 
 function getInitials(p: Profile | null | undefined) {
   if (!p) return '?';
-  if (p.full_name?.trim()) {
-    const parts = p.full_name.trim().split(/\s+/);
+  if (p.name?.trim()) {
+    const parts = p.name.trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return p.full_name.slice(0, 2).toUpperCase();
+    return p.name.slice(0, 2).toUpperCase();
   }
   if (p.email) return p.email.slice(0, 2).toUpperCase();
   return '?';
@@ -139,11 +139,11 @@ export default function ChatPage() {
         setDmPartners([]);
         return;
       }
-      const { data: profs } = await supabase.from('profiles').select('id, email, full_name').in('id', Array.from(otherIds));
+      const { data: profs } = await supabase.from('profiles').select('id, email, name').in('id', Array.from(otherIds));
       const profMap: Record<string, Profile> = {};
       (profs ?? []).forEach((p) => { profMap[p.id] = p; });
       setProfiles((prev) => ({ ...prev, ...profMap }));
-      setDmPartners(Array.from(otherIds).map((id) => ({ id, profile: profMap[id] ?? { id, email: null, full_name: null } })));
+      setDmPartners(Array.from(otherIds).map((id) => ({ id, profile: profMap[id] ?? { id, email: null, name: null } })));
     };
     loadDms();
   }, [user, supabase]);
@@ -160,7 +160,7 @@ export default function ChatPage() {
       const list = (data ?? []) as ChatMessage[];
       const senderIds = [...new Set(list.map((m) => m.sender_id).filter(Boolean))] as string[];
       if (senderIds.length) {
-        const { data: profs } = await supabase.from('profiles').select('id, email, full_name').in('id', senderIds);
+        const { data: profs } = await supabase.from('profiles').select('id, email, name').in('id', senderIds);
         const map: Record<string, Profile> = {};
         (profs ?? []).forEach((p) => { map[p.id] = p; });
         setProfiles((prev) => ({ ...prev, ...map }));
@@ -184,7 +184,7 @@ export default function ChatPage() {
       const list = (data ?? []) as DirectMessage[];
       const senderIds = [...new Set(list.map((m) => m.sender_id))];
       if (senderIds.length) {
-        const { data: profs } = await supabase.from('profiles').select('id, email, full_name').in('id', senderIds);
+        const { data: profs } = await supabase.from('profiles').select('id, email, name').in('id', senderIds);
         const map: Record<string, Profile> = {};
         (profs ?? []).forEach((p) => { map[p.id] = p; });
         setProfiles((prev) => ({ ...prev, ...map }));
@@ -243,7 +243,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!createChannelOpen || !supabase) return;
-    supabase.from('profiles').select('id, email, full_name').then(({ data }) => setAllProfiles(data ?? []));
+    supabase.from('profiles').select('id, email, name').then(({ data }) => setAllProfiles(data ?? []));
   }, [createChannelOpen, supabase]);
 
   const displayMessages = view === 'channel' ? messages : dmMessages;
@@ -274,10 +274,10 @@ export default function ChatPage() {
   }
 
   const filteredProfiles = dmSearch.trim()
-    ? allProfiles.filter((p) => (p.full_name ?? p.email ?? '').toLowerCase().includes(dmSearch.toLowerCase()) && p.id !== user.id)
+    ? allProfiles.filter((p) => (p.name ?? p.email ?? '').toLowerCase().includes(dmSearch.toLowerCase()) && p.id !== user.id)
     : allProfiles.filter((p) => p.id !== user.id);
   const inviteFiltered = inviteSearch.trim()
-    ? allProfiles.filter((p) => (p.full_name ?? p.email ?? '').toLowerCase().includes(inviteSearch.toLowerCase()) && p.id !== user.id)
+    ? allProfiles.filter((p) => (p.name ?? p.email ?? '').toLowerCase().includes(inviteSearch.toLowerCase()) && p.id !== user.id)
     : allProfiles.filter((p) => p.id !== user.id);
 
   return (
@@ -339,7 +339,7 @@ export default function ChatPage() {
                     {getInitials(profile)}
                     <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-[var(--background)]" title="Online" />
                   </span>
-                  <span className="truncate">{profile.full_name || profile.email || id.slice(0, 8)}</span>
+                  <span className="truncate">{profile.name || profile.email || id.slice(0, 8)}</span>
                 </button>
               </li>
             ))}
@@ -373,7 +373,7 @@ export default function ChatPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-white">
-                      {profiles[dmUserId]?.full_name || profiles[dmUserId]?.email || dmPartners.find((p) => p.id === dmUserId)?.profile?.full_name || dmPartners.find((p) => p.id === dmUserId)?.profile?.email || 'Användare'}
+                      {profiles[dmUserId]?.name || profiles[dmUserId]?.email || dmPartners.find((p) => p.id === dmUserId)?.profile?.name || dmPartners.find((p) => p.id === dmUserId)?.profile?.email || 'Användare'}
                     </p>
                     <p className="text-xs text-zinc-500">Direktmeddelande</p>
                   </div>
@@ -397,7 +397,7 @@ export default function ChatPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline gap-2">
                             <span className="font-medium text-white">
-                              {(m.sender?.full_name || m.sender?.email || 'Okänd')}
+                              {(m.sender?.name || m.sender?.email || 'Okänd')}
                             </span>
                             <span className="text-xs text-zinc-500">
                               {new Date(m.created_at).toLocaleString('sv-SE')}
@@ -521,7 +521,7 @@ export default function ChatPage() {
                           onChange={() => setSelectedInvites((prev) => prev.includes(p.id) ? prev.filter((x) => x !== p.id) : [...prev, p.id])}
                           className="rounded border-zinc-600"
                         />
-                        {p.full_name || p.email || p.id.slice(0, 8)}
+                        {p.name || p.email || p.id.slice(0, 8)}
                       </label>
                     </li>
                   ))}
@@ -559,7 +559,7 @@ export default function ChatPage() {
                     className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-zinc-300 hover:bg-white/5"
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-600 text-xs text-white">{getInitials(p)}</span>
-                    {p.full_name || p.email || p.id.slice(0, 8)}
+                    {p.name || p.email || p.id.slice(0, 8)}
                   </button>
                 </li>
               ))}

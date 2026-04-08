@@ -109,6 +109,7 @@ export function ProspekteringDashboard() {
   const router = useRouter();
   const [industry, setIndustry] = useState('');
   const [city, setCity] = useState('');
+  const [maxResults, setMaxResults] = useState(10);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -128,7 +129,7 @@ export function ProspekteringDashboard() {
       const res = await fetch('/api/prospects/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ industry: industry || 'städfirma', city: city || 'Västerås' }),
+        body: JSON.stringify({ industry: industry || 'städfirma', city: city || 'Västerås', max_results: maxResults }),
       });
       if (!res.ok || !res.body) {
         setProgress(0);
@@ -267,6 +268,19 @@ export function ProspekteringDashboard() {
               placeholder="t.ex. Västerås"
               className="mt-1 w-48 rounded-lg border border-[var(--border)] bg-white/5 px-4 py-2.5 text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[indigo-400] focus:outline-none focus:ring-1 focus:ring-[indigo-400]"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--muted-foreground)]">Antal</label>
+            <select
+              value={maxResults}
+              onChange={(e) => setMaxResults(Number(e.target.value))}
+              className="mt-1 w-24 rounded-lg border border-[var(--border)] bg-white/5 px-4 py-2.5 text-[var(--foreground)] focus:border-[indigo-400] focus:outline-none focus:ring-1 focus:ring-[indigo-400]"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
           </div>
           <div className="flex items-end gap-4">
             <button

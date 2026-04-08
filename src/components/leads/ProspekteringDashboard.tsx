@@ -119,9 +119,8 @@ export function ProspekteringDashboard() {
   const [monitoringRunning, setMonitoringRunning] = useState(false);
   const [healthCheckId, setHealthCheckId] = useState<string | null>(null);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-      setLoading(true);
+  const handleSearch = async () => {
+    setLoading(true);
     setLeads([]);
     setProgress(0);
     setLoadingMessage('Startar prospektering...');
@@ -246,7 +245,7 @@ export function ProspekteringDashboard() {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSearch} className="card p-6">
+      <div className="card p-6">
         <h3 className="font-heading text-lg font-semibold text-[var(--foreground)]">Sök leads</h3>
         <div className="mt-4 flex flex-wrap gap-4">
           <div>
@@ -284,8 +283,9 @@ export function ProspekteringDashboard() {
           </div>
           <div className="flex items-end gap-4">
             <button
-              type="submit"
+              type="button"
               disabled={loading}
+              onClick={handleSearch}
               className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] disabled:opacity-50"
             >
               {loading ? 'Analyserar…' : 'Starta prospektering'}
@@ -332,7 +332,7 @@ export function ProspekteringDashboard() {
             </div>
           )}
         </div>
-      </form>
+      </div>
 
       {leads.length > 0 && (
         <div className="space-y-4">

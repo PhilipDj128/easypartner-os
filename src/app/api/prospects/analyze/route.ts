@@ -263,10 +263,12 @@ export async function POST(request: Request) {
         const analyses = await Promise.all(
           orgs.map(async (r: { title?: string; link?: string }, i: number) => {
             const website = r.link || '';
-            const companyName = (r.title || `Företag ${i + 1}`).replace(
+            const rawTitle = (r.title || `Företag ${i + 1}`).replace(
               / - .*$/,
               ''
             );
+            // Rensa SEO-titlar: ta bort allt efter | eller –
+            const companyName = rawTitle.split(/\s*[|–—]\s*/)[0].trim() || rawTitle;
             let analysis = {
               built_by_other: false,
               built_by_agency: null as string | null,
@@ -505,9 +507,12 @@ export async function POST(request: Request) {
           if (agency_reputation?.warned) issues.push('agency_warned');
           if (agency_reputation?.hot_lead) issues.push('agency_hot_lead');
 
+          // Använd Google Places-namn om det finns (renare än SEO-titel)
+          const displayName = company_info.google_places_name || companyName;
+
           const lead = {
             id: `analyzed-${index}-${Date.now()}`,
-            company_name: companyName,
+            company_name: displayName,
             website,
             contact_email: null as string | null,
             contact_phone: contact_phone as string | null,

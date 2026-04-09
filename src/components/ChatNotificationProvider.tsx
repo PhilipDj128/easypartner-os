@@ -37,21 +37,31 @@ export function ChatNotificationProvider() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user?.id) return;
 
-      supabase.from('chat_members').select('channel_id').eq('user_id', user.id).then(({ data }) => {
+      supabase.from('chat_members').select('channel_id').eq('user_id', user.id).then(({ data, error }) => {
+        if (error) {
+          console.warn('[chat-notifications] chat_members query failed:', error.message);
+          return;
+        }
         (data ?? []).forEach((r) => channelIdsRef.current.add(r.channel_id));
       });
 
-      channel = supabase
-        .channel('chat-notifications')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, (payload) => {
-          const row = payload.new as { receiver_id: string; sender_id: string; content?: string };
-          if (row.receiver_id === user.id) showNotification('Nytt direktmeddelande', (row.content ?? '').slice(0, 80) || 'Nytt meddelande');
-        })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-          const row = payload.new as { channel_id: string; content?: string };
-          if (channelIdsRef.current.has(row.channel_id)) showNotification('Nytt kanalmeddelande', (row.content ?? '').slice(0, 80) || 'Nytt meddelande');
-        })
-        .subscribe();
+      try {
+        channel = supabase
+          .channel('chat-notifications')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'direct_messages' }, (payload) => {
+            const row = payload.new as { receiver_id: string; sender_id: string; content?: string };
+            if (row.receiver_id === user.id) showNotification('Nytt direktmeddelande', (row.content ?? '').slice(0, 80) || 'Nytt meddelande');
+          })
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+            const row = payload.new as { channel_id: string; content?: string };
+            if (channelIdsRef.current.has(row.channel_id)) showNotification('Nytt kanalmeddelande', (row.content ?? '').slice(0, 80) || 'Nytt meddelande');
+          })
+          .subscribe();
+      } catch (e) {
+        console.warn('[chat-notifications] realtime subscribe failed:', e);
+      }
+    }).catch(() => {
+      // Auth not available, skip notifications
     });
 
     return () => {

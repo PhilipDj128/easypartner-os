@@ -135,8 +135,6 @@ export function ProspekteringDashboard() {
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
-  const [errorMessage, setErrorMessage] = useState('');
-
   const handleSearch = async () => {
     setLoading(true);
     setLeads([]);

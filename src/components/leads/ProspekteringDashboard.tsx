@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ScoreCircle } from './ScoreCircle';
 import { SpeedBar } from '@/components/ui/SpeedBar';
@@ -118,6 +118,22 @@ export function ProspekteringDashboard() {
   const [filterHighScore, setFilterHighScore] = useState(false);
   const [monitoringRunning, setMonitoringRunning] = useState(false);
   const [healthCheckId, setHealthCheckId] = useState<string | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Fetch remaining searches on mount and after each search
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch('/api/prospects/usage');
+      if (res.ok) {
+        const data = await res.json();
+        setRemaining(data.remaining ?? null);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -193,6 +209,7 @@ export function ProspekteringDashboard() {
       }
       setLeads(newLeads);
       setLoadingMessage('');
+      fetchUsage();
       router.refresh();
     } catch (err) {
       setErrorMessage(`Nätverksfel: ${err instanceof Error ? err.message : 'Okänt fel'}`);
@@ -296,14 +313,21 @@ export function ProspekteringDashboard() {
               <option value={20}>20</option>
             </select>
           </div>
+          {remaining !== null && (
+            <div className="flex items-end">
+              <span className={`text-sm font-medium ${remaining === 0 ? 'text-rose-400' : 'text-[var(--muted-foreground)]'}`}>
+                {remaining}/100 sökningar kvar idag
+              </span>
+            </div>
+          )}
           <div className="flex items-end gap-4">
             <button
               type="button"
-              disabled={loading}
+              disabled={loading || remaining === 0}
               onClick={handleSearch}
               className="btn-primary rounded-lg px-5 py-2.5 text-sm font-medium text-[var(--foreground)] disabled:opacity-50"
             >
-              {loading ? 'Analyserar…' : 'Starta prospektering'}
+              {loading ? 'Analyserar…' : remaining === 0 ? 'Gräns nådd' : 'Starta prospektering'}
             </button>
             <button
               type="button"

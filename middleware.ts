@@ -92,6 +92,7 @@ const PUBLIC_PATHS = [
   '/api/health-check',    // Publik health check
   '/api/admin/',          // Admin endpoints (egen auth via CRON_SECRET)
   '/api/prospects/analyze', // Anropas internt från auto-prospect cron
+  '/api/prospects/usage',   // Usage counter (read-only)
 ];
 
 function isPublicPath(pathname: string): boolean {

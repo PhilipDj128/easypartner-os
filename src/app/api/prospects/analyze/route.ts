@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
-import { searchSerp } from '@/lib/serpapi';
+import { searchGoogle } from '@/lib/google-custom-search';
 import Anthropic from '@anthropic-ai/sdk';
+
+const DAILY_LIMIT = 100;
 import { analyzeWebsite } from '@/lib/prospect-analyzer';
 import { lookupPtsOperator, normalizePhone } from '@/lib/company-info';
 import { fetchAgencyReputation, fetchTrustpilotRatingForAgency } from '@/lib/agency-reputation';
@@ -229,23 +231,44 @@ export async function POST(request: Request) {
           return;
         }
 
-        const serpKey = process.env.SERPAPI_KEY;
-        if (!serpKey || serpKey.startsWith('din_')) {
-          send({ type: 'error', message: 'SERPAPI_KEY saknas' });
+        const cseId = process.env.GOOGLE_CSE_ID;
+        const cseKey = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_PAGESPEED_API_KEY;
+        if (!cseId || !cseKey) {
+          send({ type: 'error', message: 'Google Custom Search ej konfigurerad (GOOGLE_CSE_ID saknas)' });
           controller.close();
           return;
+        }
+
+        // Check daily usage limit
+        if (supabase) {
+          const today = new Date().toISOString().split('T')[0];
+          const { data: usage } = await supabase
+            .from('daily_usage')
+            .select('search_count')
+            .eq('date', today)
+            .single();
+          const currentCount = usage?.search_count ?? 0;
+          if (currentCount >= DAILY_LIMIT) {
+            send({ type: 'error', message: `Daglig gräns nådd (${DAILY_LIMIT} sökningar/dag). Försök igen imorgon.` });
+            controller.close();
+            return;
+          }
+          // Increment usage counter
+          await supabase.from('daily_usage').upsert(
+            { date: today, search_count: currentCount + 1 },
+            { onConflict: 'date' }
+          );
         }
 
         const q = `${industry} ${city}`;
         send({ type: 'progress', message: 'Hämtar företag...', progress: 5 });
 
-        const serpResult = await searchSerp(q, 'Sweden', maxResults);
-        const allOrgs = serpResult?.organic_results || [];
+        const searchResult = await searchGoogle(q, maxResults);
+        const allOrgs = searchResult?.organic_results || [];
         const orgs = allOrgs
           .filter((r: { link?: string }) => r.link && !isBlockedDomain(r.link))
           .slice(0, maxResults);
-        const serpAds = (serpResult?.ads ?? serpResult?.paid_results ?? []) as { link?: string; displayed_link?: string }[];
-        const adLinks = serpAds.map((a) => (a.link || a.displayed_link || '').toLowerCase()).filter(Boolean);
+        const adLinks: string[] = []; // Google CSE does not return ads
 
         if (orgs.length === 0) {
           send({ type: 'done', leads: [], progress: 100 });
@@ -307,7 +330,7 @@ export async function POST(request: Request) {
             };
             if (!companyName || !website) return empty;
             try {
-              const nameSearch = await searchSerp(`"${companyName}"`, 'Sweden');
+              const nameSearch = await searchGoogle(`"${companyName}"`);
               const nameResults = (nameSearch?.organic_results || []) as SerpResult[];
               let siteHost = '';
               try {
@@ -424,13 +447,13 @@ export async function POST(request: Request) {
 
           if (builtByAgency) {
             try {
-              const tp = await fetchTrustpilotRatingForAgency(builtByAgency, (query) => searchSerp(query, 'Sweden'));
+              const tp = await fetchTrustpilotRatingForAgency(builtByAgency, (query) => searchGoogle(query));
               agency_trustpilot_rating = tp.rating;
               company_info.agency_trustpilot_rating = tp.rating ?? undefined;
               if (tp.rating != null && tp.rating < 3.5) {
                 issues.push('agency_bad_reviews');
               }
-              agency_reputation = await fetchAgencyReputation(builtByAgency, (q) => searchSerp(q, 'Sweden', 10));
+              agency_reputation = await fetchAgencyReputation(builtByAgency, (q) => searchGoogle(q, 10));
             } catch {
               //
             }

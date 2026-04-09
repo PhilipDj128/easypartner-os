@@ -119,10 +119,13 @@ export function ProspekteringDashboard() {
   const [monitoringRunning, setMonitoringRunning] = useState(false);
   const [healthCheckId, setHealthCheckId] = useState<string | null>(null);
 
+  const [errorMessage, setErrorMessage] = useState('');
+
   const handleSearch = async () => {
     setLoading(true);
     setLeads([]);
     setProgress(0);
+    setErrorMessage('');
     setLoadingMessage('Startar prospektering...');
     try {
       const res = await fetch('/api/prospects/analyze', {
@@ -130,7 +133,15 @@ export function ProspekteringDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ industry: industry || 'städfirma', city: city || 'Västerås', max_results: maxResults }),
       });
-      if (!res.ok || !res.body) {
+      if (!res.ok) {
+        setErrorMessage(`API returnerade ${res.status}: ${res.statusText}`);
+        setProgress(0);
+        setLoadingMessage('');
+        setLoading(false);
+        return;
+      }
+      if (!res.body) {
+        setErrorMessage('Kunde inte läsa svar från API (ingen body)');
         setProgress(0);
         setLoadingMessage('');
         setLoading(false);
@@ -165,7 +176,7 @@ export function ProspekteringDashboard() {
                 router.refresh();
                 return;
               } else if (data.type === 'error') {
-                alert(data.message || 'Ett fel inträffade');
+                setErrorMessage(data.message || 'Ett fel inträffade');
                 setProgress(0);
                 setLoadingMessage('');
                 setLoading(false);
@@ -177,10 +188,14 @@ export function ProspekteringDashboard() {
           }
         }
       }
+      if (newLeads.length === 0) {
+        setErrorMessage('Inga leads hittades. Testa en annan bransch eller stad.');
+      }
       setLeads(newLeads);
       setLoadingMessage('');
       router.refresh();
-    } catch {
+    } catch (err) {
+      setErrorMessage(`Nätverksfel: ${err instanceof Error ? err.message : 'Okänt fel'}`);
       setLeads([]);
       setProgress(0);
       setLoadingMessage('');
@@ -317,6 +332,11 @@ export function ProspekteringDashboard() {
               {monitoringRunning ? 'Kör bevakning…' : 'Starta bevakning'}
             </button>
           </div>
+          {errorMessage && (
+            <div className="mt-4 w-full rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              {errorMessage}
+            </div>
+          )}
           {loading && (
             <div className="mt-4 w-full">
               <div className="flex items-center justify-between gap-2 text-sm text-[var(--muted-foreground)]">
